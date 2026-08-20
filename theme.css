@@ -1,0 +1,36 @@
+:root {
+  --bg: #f2f2f2;
+  --surface: #fff;
+  --ink: #151515;
+  --muted: #747474;
+  --line: #e1e1e1;
+  --green: #191919;
+  --mint: #e7e7e7;
+  --red: #555;
+  --amber: #aaa;
+  --shadow: 0 12px 36px rgba(0, 0, 0, .07);
+}
+
+.sidebar { background: #111; }
+.brand-mark { background: #fff; color: #111; }
+.nav-item { color: #aaa; }
+.sidebar-quote span, .sidebar-footer { color: #929292; }
+.status-dot { background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .12); }
+.primary-btn { background: #181818; box-shadow: 0 7px 18px rgba(0, 0, 0, .15); }
+.primary-btn:hover { background: #000; }
+.secondary-btn { background: #ededed; color: #333; }
+.icon.mint, .icon.amber, .icon.violet, .icon.blue { background: #ededed; color: #333; }
+.chart-legend span { background: #222; }
+.chart-legend b, .result-pill.win, .result-pill.loss { background: #ededed; color: #333; }
+.positive, .negative { color: #222; }
+.mini-progress span { background: #222; }
+.review-progress-card { background: #f4f4f4; }
+.review-tip { border-color: #777; }
+.cycle-label { background: #171717; }
+.cycle-ring { border-color: #ddd; border-top-color: #222; }
+.trade-chart { filter: grayscale(1); }
+.danger-btn { color: #555; }
+.upload-icon, .text-btn { color: #222; }
+.note-list-item:hover, .note-list-item.active { background: #f1f1f1; }
+.toast { background: #171717; }
+input:focus, textarea:focus, select:focus { border-color: #777; box-shadow: 0 0 0 3px rgba(0, 0, 0, .06); }
