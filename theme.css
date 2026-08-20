@@ -95,4 +95,5 @@ dialog::backdrop { background: rgba(0, 0, 0, .75); }
 .note-image-upload span { color: #ddd; font-size: 12px; }
 .note-image-upload small { color: #727277; font-size: 0; }
 .note-image-upload small::after { content: '최대 10MB · 자동 최적화'; font-size: 9px; }
+.note-image-upload::after { content: '또는 Ctrl + V로 이미지 붙여넣기'; margin-left: 10px; color: #8b8b90; font-size: 9px; }
 @media (max-width: 720px) { .note-images { grid-template-columns: repeat(2, 1fr); } }
