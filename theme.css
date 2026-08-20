@@ -71,3 +71,18 @@ dialog::backdrop { background: rgba(0, 0, 0, .75); }
 .direction-pill.unset { color: #777; }
 .trade-card.win { border-top-color: rgba(86, 219, 148, .5); }
 .trade-card.loss { border-top-color: rgba(255, 116, 116, .5); }
+.trade-card { cursor: pointer; transition: transform .2s ease, border-color .2s ease; }
+.trade-card:hover { transform: translateY(-3px); border-color: rgba(255, 255, 255, .2); }
+.card-actions { gap: 12px; }
+.detail-modal { padding: 28px; }
+.detail-chart { width: 100%; height: 260px; object-fit: cover; border-radius: 10px; margin-bottom: 18px; filter: grayscale(1); }
+.detail-badges { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.detail-badges .direction-pill { margin-top: 0; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-grid div, .detail-reason { padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .025); }
+.detail-grid span, .detail-reason span { display: block; margin-bottom: 6px; color: #828287; font-size: 10px; }
+.detail-grid b { font-size: 13px; }
+.detail-reason { margin-top: 10px; }
+.detail-reason p { margin: 0; color: #ccc; font-size: 12px; line-height: 1.7; }
+.danger-action { margin-right: auto; padding: 11px 16px; border: 1px solid rgba(255, 116, 116, .25); border-radius: 8px; background: rgba(235, 75, 75, .1); color: #ff7474; cursor: pointer; }
+@media (max-width: 520px) { .detail-grid { grid-template-columns: 1fr; } .detail-chart { height: 190px; } }

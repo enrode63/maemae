@@ -73,7 +73,7 @@
 
   <dialog id="tradeModal">
     <form id="tradeForm">
-      <div class="modal-head"><div><p class="eyebrow">NEW TRADE</p><h2>매매 기록하기</h2></div><button type="button" class="close-btn" data-close>×</button></div>
+      <div class="modal-head"><div><p class="eyebrow" id="tradeModalEyebrow">NEW TRADE</p><h2 id="tradeModalTitle">매매 기록하기</h2></div><button type="button" class="close-btn" data-close>×</button></div>
       <div class="form-grid">
         <label>날짜<input type="date" name="date" required /></label>
         <label>종목<input name="symbol" placeholder="예: BTC/USDT" required /></label>
@@ -86,11 +86,13 @@
         <label class="upload-box full-span"><input type="file" name="chart" accept="image/*" hidden /><span class="upload-icon">↥</span><strong>차트 이미지 올리기</strong><small>PNG, JPG · 최대 2MB</small><em id="fileName">파일을 선택하거나 드래그하세요</em></label>
       </div>
       <p class="form-error" id="formError"></p>
-      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>취소</button><button class="primary-btn" type="submit">기록 저장</button></div>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>취소</button><button class="primary-btn" id="tradeSubmitBtn" type="submit">기록 저장</button></div>
     </form>
   </dialog>
 
   <dialog id="reviewModal"><form id="reviewForm"><div class="modal-head"><div><p class="eyebrow">CYCLE REVIEW</p><h2 id="reviewModalTitle">복기 작성</h2></div><button type="button" class="close-btn" data-review-close>×</button></div><input type="hidden" name="cycle"/><label>잘한 점<textarea name="good" rows="4" placeholder="계속 가져갈 좋은 습관은 무엇인가요?" required></textarea></label><label>고쳐야 할 점<textarea name="improve" rows="4" placeholder="반복된 실수와 다음 사이클의 개선점을 적어보세요." required></textarea></label><label>다음 10회의 핵심 원칙<input name="rule" placeholder="예: 손절가는 진입 전에 정한다" required /></label><div class="modal-actions"><button type="button" class="secondary-btn" data-review-close>취소</button><button class="primary-btn">복기 저장</button></div></form></dialog>
+
+  <dialog id="tradeDetailModal"><div class="detail-modal"><div class="modal-head"><div><p class="eyebrow">TRADE DETAIL</p><h2 id="detailTitle">매매 상세</h2></div><button type="button" class="close-btn" data-detail-close>×</button></div><div id="tradeDetailContent"></div><div class="modal-actions"><button class="danger-action" id="detailDelete">삭제</button><button class="primary-btn" id="detailEdit">수정하기</button></div></div></dialog>
 
   <div class="toast" id="toast"></div>
   <script src="app.js"></script>
