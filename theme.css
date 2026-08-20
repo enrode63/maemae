@@ -1,36 +1,65 @@
 :root {
-  --bg: #f2f2f2;
-  --surface: #fff;
-  --ink: #151515;
-  --muted: #747474;
-  --line: #e1e1e1;
-  --green: #191919;
-  --mint: #e7e7e7;
-  --red: #555;
-  --amber: #aaa;
-  --shadow: 0 12px 36px rgba(0, 0, 0, .07);
+  --bg: #090909;
+  --surface: rgba(24, 24, 26, .88);
+  --ink: #f4f4f4;
+  --muted: #999;
+  --line: rgba(255, 255, 255, .09);
+  --green: #f2f2f2;
+  --mint: #292929;
+  --red: #aaa;
+  --amber: #777;
+  --shadow: 0 18px 50px rgba(0, 0, 0, .28);
 }
 
-.sidebar { background: #111; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 78% 8%, rgba(105, 105, 115, .18), transparent 32%),
+    radial-gradient(circle at 28% 88%, rgba(62, 62, 68, .2), transparent 36%),
+    linear-gradient(145deg, #070707 0%, #111113 48%, #080808 100%);
+  background-attachment: fixed;
+}
+
+.sidebar { background: linear-gradient(180deg, rgba(19, 19, 20, .98), rgba(8, 8, 8, .98)); border-right: 1px solid rgba(255, 255, 255, .07); }
 .brand-mark { background: #fff; color: #111; }
 .nav-item { color: #aaa; }
 .sidebar-quote span, .sidebar-footer { color: #929292; }
 .status-dot { background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .12); }
-.primary-btn { background: #181818; box-shadow: 0 7px 18px rgba(0, 0, 0, .15); }
-.primary-btn:hover { background: #000; }
-.secondary-btn { background: #ededed; color: #333; }
-.icon.mint, .icon.amber, .icon.violet, .icon.blue { background: #ededed; color: #333; }
-.chart-legend span { background: #222; }
-.chart-legend b, .result-pill.win, .result-pill.loss { background: #ededed; color: #333; }
-.positive, .negative { color: #222; }
-.mini-progress span { background: #222; }
-.review-progress-card { background: #f4f4f4; }
+.primary-btn { background: #f1f1f1; color: #111; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); }
+.primary-btn:hover { background: #fff; }
+.secondary-btn { background: #292929; color: #ddd; }
+.stat-card, .panel { backdrop-filter: blur(18px); border-color: var(--line); box-shadow: var(--shadow); }
+.icon.mint, .icon.amber, .icon.violet, .icon.blue { background: #29292b; color: #ddd; }
+.chart-legend span { background: #e6e6e6; }
+.chart-legend b, .result-pill.win, .result-pill.loss { background: #303032; color: #e5e5e5; }
+.positive { color: #f4f4f4; }
+.negative { color: #aaa; }
+.mini-progress { background: #303032; }
+.mini-progress span { background: #eee; }
+.review-progress-card { background: rgba(255, 255, 255, .045); }
 .review-tip { border-color: #777; }
-.cycle-label { background: #171717; }
-.cycle-ring { border-color: #ddd; border-top-color: #222; }
+.cycle-label { background: linear-gradient(145deg, #2b2b2e, #161617); }
+.cycle-ring { border-color: #333; border-top-color: #eee; }
 .trade-chart { filter: grayscale(1); }
 .danger-btn { color: #555; }
 .upload-icon, .text-btn { color: #222; }
-.note-list-item:hover, .note-list-item.active { background: #f1f1f1; }
+.note-list-item:hover, .note-list-item.active { background: rgba(255, 255, 255, .07); }
 .toast { background: #171717; }
-input:focus, textarea:focus, select:focus { border-color: #777; box-shadow: 0 0 0 3px rgba(0, 0, 0, .06); }
+input, textarea, select { background: #18181a; border-color: #353538; color: #eee; color-scheme: dark; }
+input::placeholder, textarea::placeholder { color: #69696d; }
+input:focus, textarea:focus, select:focus { border-color: #777; box-shadow: 0 0 0 3px rgba(255, 255, 255, .05); }
+.search-box, .section-toolbar select { background: rgba(24, 24, 26, .9); border-color: var(--line); color: #aaa; }
+.search-box input, .editor-title, .editor-body { background: transparent; }
+th, td { border-color: var(--line); }
+.upload-box { background: rgba(255, 255, 255, .025); border-color: #4b4b4e; }
+.no-image { background: linear-gradient(135deg, #262628, #19191b); color: #777; }
+dialog { background: #151517; color: var(--ink); }
+dialog::backdrop { background: rgba(0, 0, 0, .75); }
+.close-btn { background: #29292c; color: #ddd; }
+.eyebrow, .today, .stat-head, .stat-card small, .trade-date, .trade-reason, .review-cell span { color: #929296; }
+.chart-tools { display: flex; align-items: center; gap: 18px; }
+.period-tabs { display: flex; padding: 3px; border: 1px solid var(--line); background: rgba(255, 255, 255, .035); border-radius: 8px; }
+.period-tabs button { min-width: 31px; padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: #777; font-size: 10px; cursor: pointer; }
+.period-tabs button:hover { color: #ddd; }
+.period-tabs button.active { background: #eee; color: #111; font-weight: 700; }
+@media (max-width: 720px) { .chart-tools { align-items: flex-end; flex-direction: column-reverse; gap: 9px; } .chart-legend { display: none; } }
