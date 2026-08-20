@@ -78,6 +78,7 @@
         <label>날짜<input type="date" name="date" required /></label>
         <label>종목<input name="symbol" placeholder="예: BTC/USDT" required /></label>
         <label>포지션<select name="direction" required><option value="long">롱 (Long)</option><option value="short">숏 (Short)</option></select></label>
+        <label>레버리지 배율<input type="number" name="leverage" step="0.1" min="1" placeholder="예: 5" required /></label>
         <label>결과<select name="result" required><option value="win">승리</option><option value="loss">패배</option></select></label>
         <label>손익비 (R)<input type="number" name="rr" step="0.1" min="0" placeholder="예: 2.5" required /></label>
         <label>투입 금액<input type="number" name="amount" min="0" placeholder="예: 1000000" required /></label>
@@ -95,6 +96,6 @@
   <dialog id="tradeDetailModal"><div class="detail-modal"><div class="modal-head"><div><p class="eyebrow">TRADE DETAIL</p><h2 id="detailTitle">매매 상세</h2></div><button type="button" class="close-btn" data-detail-close>×</button></div><div id="tradeDetailContent"></div><div class="modal-actions"><button class="danger-action" id="detailDelete">삭제</button><button class="primary-btn" id="detailEdit">수정하기</button></div></div></dialog>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js?v=20260820-3"></script>
+  <script src="app.js?v=20260820-4"></script>
 </body>
 </html>

@@ -69,6 +69,8 @@ dialog::backdrop { background: rgba(0, 0, 0, .75); }
 .direction-pill.long { border-left: 2px solid #eee; }
 .direction-pill.short { border-left: 2px solid #777; }
 .direction-pill.unset { color: #777; }
+.leverage-pill { display: inline-block; margin: 8px 0 0 5px; padding: 4px 7px; border-radius: 5px; background: rgba(255,255,255,.08); color: #e0e0e4; font-size: 9px; font-weight: 700; }
+.detail-badges .leverage-pill { margin-top: 0; }
 .trade-card.win { border-top-color: rgba(86, 219, 148, .5); }
 .trade-card.loss { border-top-color: rgba(255, 116, 116, .5); }
 .trade-card { cursor: pointer; transition: transform .2s ease, border-color .2s ease; }
