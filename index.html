@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="매매 기록과 복기를 한곳에서 관리하는 트레이딩 저널" />
+  <title>EDGE — Trading Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="brand-mark">E</span><span>EDGE</span></a>
+    <nav aria-label="주 메뉴">
+      <button class="nav-item active" data-view="dashboard"><span>⌁</span> 대시보드</button>
+      <button class="nav-item" data-view="trades"><span>↗</span> 매매일지</button>
+      <button class="nav-item" data-view="reviews"><span>◎</span> 10회 복기</button>
+      <button class="nav-item" data-view="notes"><span>▤</span> 메모장</button>
+    </nav>
+    <div class="sidebar-quote"><span>RULE #01</span><p>좋은 매매는 수익이 아니라<br>계획을 지킨 매매다.</p></div>
+    <div class="sidebar-footer"><span class="status-dot"></span> 브라우저에 자동 저장 중</div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><p class="eyebrow" id="pageEyebrow">TRADING OVERVIEW</p><h1 id="pageTitle">오늘도 원칙대로.</h1></div>
+      <div class="header-actions"><span class="today" id="today"></span><button class="primary-btn" id="openTradeModal">＋ 매매 기록</button></div>
+    </header>
+
+    <section class="view active" id="dashboardView">
+      <div class="stats-grid">
+        <article class="stat-card"><div class="stat-head"><span>누적 손익</span><i class="icon mint">₩</i></div><strong id="totalPnl">₩0</strong><small id="pnlSub">총 0번의 매매</small></article>
+        <article class="stat-card"><div class="stat-head"><span>승률</span><i class="icon amber">%</i></div><strong id="winRate">0%</strong><small id="winSub">0승 0패</small></article>
+        <article class="stat-card"><div class="stat-head"><span>평균 손익비</span><i class="icon violet">R</i></div><strong id="avgRr">0.0R</strong><small>기록된 매매 기준</small></article>
+        <article class="stat-card"><div class="stat-head"><span>이번 복기까지</span><i class="icon blue">◎</i></div><strong id="reviewProgress">0 / 10</strong><div class="mini-progress"><span id="progressBar"></span></div></article>
+      </div>
+      <div class="dashboard-grid">
+        <article class="panel chart-panel">
+          <div class="panel-head"><div><p class="eyebrow">PERFORMANCE</p><h2>누적 수익률</h2></div><div class="chart-legend"><span></span> 누적 수익률 <b id="returnBadge">+0.0%</b></div></div>
+          <div class="chart-wrap"><canvas id="performanceChart"></canvas><div class="empty-chart" id="emptyChart">첫 매매를 기록하면 수익 곡선이 시작됩니다.</div></div>
+        </article>
+        <article class="panel review-preview">
+          <div class="panel-head"><div><p class="eyebrow">REVIEW CYCLE</p><h2>10회 복기</h2></div><button class="text-btn" data-go="reviews">전체 보기 →</button></div>
+          <div id="reviewPreview"></div>
+        </article>
+      </div>
+      <article class="panel recent-panel">
+        <div class="panel-head"><div><p class="eyebrow">RECENT TRADES</p><h2>최근 매매</h2></div><button class="text-btn" data-go="trades">모두 보기 →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>날짜</th><th>종목</th><th>결과</th><th>손익비</th><th>손익 금액</th><th>근거</th></tr></thead><tbody id="recentTrades"></tbody></table></div>
+      </article>
+    </section>
+
+    <section class="view" id="tradesView">
+      <div class="section-toolbar"><div class="search-box">⌕ <input id="tradeSearch" placeholder="종목 또는 근거 검색" /></div><select id="tradeFilter"><option value="all">전체 결과</option><option value="win">승리</option><option value="loss">패배</option></select></div>
+      <div class="trade-grid" id="tradeGrid"></div>
+    </section>
+
+    <section class="view" id="reviewsView">
+      <div class="review-hero panel"><div><p class="eyebrow">DELIBERATE PRACTICE</p><h2>10번마다 멈추고, 더 나아집니다.</h2><p>최근 10개 매매를 한 사이클로 묶어 잘한 점과 고칠 점을 남겨보세요.</p></div><div class="cycle-ring" id="cycleRing"><strong>0</strong><span>/ 10</span></div></div>
+      <div class="review-list" id="reviewList"></div>
+    </section>
+
+    <section class="view" id="notesView">
+      <div class="notes-layout">
+        <aside class="note-list-panel panel"><button class="primary-btn full" id="newNote">＋ 새 메모</button><div class="search-box compact">⌕ <input id="noteSearch" placeholder="메모 검색" /></div><div id="noteList"></div></aside>
+        <article class="note-editor panel" id="noteEditor"><div class="note-placeholder"><span>▤</span><h2>매매 아이디어를 놓치지 마세요.</h2><p>왼쪽에서 메모를 선택하거나 새 메모를 만들어보세요.</p></div></article>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="tradeModal">
+    <form id="tradeForm">
+      <div class="modal-head"><div><p class="eyebrow">NEW TRADE</p><h2>매매 기록하기</h2></div><button type="button" class="close-btn" data-close>×</button></div>
+      <div class="form-grid">
+        <label>날짜<input type="date" name="date" required /></label>
+        <label>종목<input name="symbol" placeholder="예: BTC/USDT" required /></label>
+        <label>결과<select name="result" required><option value="win">승리</option><option value="loss">패배</option></select></label>
+        <label>손익비 (R)<input type="number" name="rr" step="0.1" min="0" placeholder="예: 2.5" required /></label>
+        <label>투입 금액<input type="number" name="amount" min="0" placeholder="예: 1000000" required /></label>
+        <label>손익 금액<input type="number" name="pnl" step="1" placeholder="승리 + / 패배 -" required /></label>
+        <label class="full-span">매매 근거<textarea name="reason" rows="3" placeholder="진입 근거와 지킨 원칙을 기록하세요." required></textarea></label>
+        <label class="upload-box full-span"><input type="file" name="chart" accept="image/*" hidden /><span class="upload-icon">↥</span><strong>차트 이미지 올리기</strong><small>PNG, JPG · 최대 2MB</small><em id="fileName">파일을 선택하거나 드래그하세요</em></label>
+      </div>
+      <p class="form-error" id="formError"></p>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>취소</button><button class="primary-btn" type="submit">기록 저장</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="reviewModal"><form id="reviewForm"><div class="modal-head"><div><p class="eyebrow">CYCLE REVIEW</p><h2 id="reviewModalTitle">복기 작성</h2></div><button type="button" class="close-btn" data-review-close>×</button></div><input type="hidden" name="cycle"/><label>잘한 점<textarea name="good" rows="4" placeholder="계속 가져갈 좋은 습관은 무엇인가요?" required></textarea></label><label>고쳐야 할 점<textarea name="improve" rows="4" placeholder="반복된 실수와 다음 사이클의 개선점을 적어보세요." required></textarea></label><label>다음 10회의 핵심 원칙<input name="rule" placeholder="예: 손절가는 진입 전에 정한다" required /></label><div class="modal-actions"><button type="button" class="secondary-btn" data-review-close>취소</button><button class="primary-btn">복기 저장</button></div></form></dialog>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
