@@ -31,9 +31,11 @@ body {
 .stat-card, .panel { backdrop-filter: blur(18px); border-color: var(--line); box-shadow: var(--shadow); }
 .icon.mint, .icon.amber, .icon.violet, .icon.blue { background: #29292b; color: #ddd; }
 .chart-legend span { background: #e6e6e6; }
-.chart-legend b, .result-pill.win, .result-pill.loss { background: #303032; color: #e5e5e5; }
-.positive { color: #f4f4f4; }
-.negative { color: #aaa; }
+.chart-legend b { background: #303032; color: #e5e5e5; }
+.result-pill.win { background: rgba(42, 190, 113, .16); color: #56db94; border: 1px solid rgba(86, 219, 148, .22); }
+.result-pill.loss { background: rgba(235, 75, 75, .15); color: #ff7474; border: 1px solid rgba(255, 116, 116, .2); }
+.positive { color: #56db94; }
+.negative { color: #ff7474; }
 .mini-progress { background: #303032; }
 .mini-progress span { background: #eee; }
 .review-progress-card { background: rgba(255, 255, 255, .045); }
@@ -63,3 +65,9 @@ dialog::backdrop { background: rgba(0, 0, 0, .75); }
 .period-tabs button:hover { color: #ddd; }
 .period-tabs button.active { background: #eee; color: #111; font-weight: 700; }
 @media (max-width: 720px) { .chart-tools { align-items: flex-end; flex-direction: column-reverse; gap: 9px; } .chart-legend { display: none; } }
+.direction-pill { display: inline-block; margin-top: 8px; padding: 4px 7px; border-radius: 5px; background: #303034; color: #c8c8cc; font-size: 9px; font-weight: 700; letter-spacing: .5px; }
+.direction-pill.long { border-left: 2px solid #eee; }
+.direction-pill.short { border-left: 2px solid #777; }
+.direction-pill.unset { color: #777; }
+.trade-card.win { border-top-color: rgba(86, 219, 148, .5); }
+.trade-card.loss { border-top-color: rgba(255, 116, 116, .5); }
