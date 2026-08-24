@@ -14,6 +14,7 @@ from fund_chat import ChatOrchestrator
 from fund_chat.audit import AuditLog
 
 from .ticks import DeterministicTickSource
+from trading_automation import AutomationService
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,7 @@ class LocalRuntime:
         self.config = config or RuntimeConfig()
         self.events = AuditLog(self.state_dir / "runtime-events.jsonl")
         self.chat = ChatOrchestrator(self.state_dir / "chat-events.jsonl", self._apply_proposal)
+        self.automation = AutomationService(self.state_dir)
         self.ticks = DeterministicTickSource(self.config.seed, self.config.symbol, self.config.start_price)
         self.engine = SimulationEngine({self.config.symbol: self.config.start_price}, risk_config, self.state_dir / "engine")
         self.status = "idle"
@@ -115,6 +117,9 @@ class LocalRuntime:
         try:
             while not self._stop.is_set():
                 self.step()
+                # Schedule checks are timezone-aware and idempotent; unavailable
+                # providers remain an explicit no-op rather than using fake data.
+                self.automation.run_due()
                 self._stop.wait(self.config.interval_seconds)
         except Exception as exc:
             with self._lock:
@@ -142,7 +147,7 @@ class LocalRuntime:
             order_id = f"demo-{self.config.seed}-{tick.sequence}-{side.lower()}"
             signal = Signal(order_id, tick.symbol, side, self.config.quantity, tick.price,
                             "ScalpingDemoWorker", True,
-                            "explicit demo-only auto-approval policy")
+                            "explicit demo-only auto-approval policy; deterministic tick momentum, bounded quantity, no broker route, and simulation ledger only")
             self._emit("signal_generated", signal.json())
             before = len(self.engine.events)
             self.engine.process(signal)

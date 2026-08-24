@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from fund_chat import ChatError
 from .runtime import LocalRuntime, RuntimeConfig
@@ -111,16 +111,25 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
             self.end_headers()
 
         def do_GET(self):
-            path = urlparse(self.path).path
+            parsed = urlparse(self.path)
+            path = parsed.path
             routes = {"/health": lambda: {"ok": True, "scope": "localhost-demo-only"},
                       "/runtime/status": runtime.status_json,
                       "/results": runtime.results,
-                      "/events": runtime.event_list}
+                      "/events": runtime.event_list,
+                      "/automation/status": runtime.automation.status,
+                      "/automation/universe": runtime.automation.universe,
+                      "/automation/reports": lambda: runtime.automation.reports(parse_qs(parsed.query).get("team", [None])[0]),
+                      "/automation/weekly-evaluations": runtime.automation.evaluations,
+                      "/automation/performance": lambda: runtime.automation.performance(parse_qs(parsed.query).get("team", [None])[0])}
             if path not in routes:
                 return self._send(404, {"error": "not_found"})
             if path != "/health" and not self._require_authorization():
                 return
-            self._send(200, routes[path]())
+            try:
+                self._send(200, routes[path]())
+            except ValueError as exc:
+                self._send(400, {"error": type(exc).__name__, "message": str(exc)})
 
         def do_POST(self):
             if not self._require_authorization():
@@ -140,6 +149,12 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                     value = runtime.chat.decide_proposal(body["conversation_id"], body["proposal_id"], body["request_id"], path.endswith("approve"), body["reason"], body.get("actor_role"))
                 elif path in ("/runtime/start", "/runtime/pause", "/runtime/stop"):
                     value = getattr(runtime, path.rsplit("/", 1)[1])(body["request_id"])
+                elif path == "/automation/run-due":
+                    value = runtime.automation.run_due()
+                elif path == "/automation/paper-trades":
+                    value = runtime.automation.record_trade(body)
+                elif path == "/automation/weekly-evaluation":
+                    value = runtime.automation.weekly_evaluation(body["team"], body["week"], body.get("strengths", []), body.get("improvements", []))
                 else:
                     return self._send(404, {"error": "not_found"})
                 self._send(200, value)

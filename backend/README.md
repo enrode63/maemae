@@ -31,3 +31,25 @@ python -m unittest discover -s tests -v
 ```
 
 `pytest`가 설치된 환경에서는 `pytest` 명령도 그대로 사용할 수 있습니다.
+# Automated research and paper-trading API
+
+The local runtime also exposes a fail-closed automation foundation. It has no
+broker adapter or live-order endpoint. `mode` is always `simulation`.
+
+- `GET /automation/status` — provider configuration, schedules, safety mode
+- `GET /automation/universe` — deduplicated S&P 500 + Nasdaq-100 and BTC/ETH
+- `POST /automation/run-due` — idempotent schedule check/report generation
+- `GET /automation/reports` — generated reports
+- `POST /automation/paper-trades` — append a simulated fill; BUY rationale must
+  contain at least 60 characters
+- `GET /automation/performance?team=alpha` — overall/team P&L, RR, positions,
+  win rate, return and asset allocation
+- `POST /automation/weekly-evaluation` and `GET /automation/weekly-evaluations`
+  — team weekly performance, strengths, and improvements
+
+US reports become due at 16:05 America/New_York on weekdays (IANA timezone data
+handles DST); crypto reports become due daily at 09:00 Asia/Seoul. The running
+worker checks both schedules automatically. Market-data and LLM adapters default
+to `not_configured`; due work is reported as `blocked_not_configured` and no
+placeholder report is fabricated. Supply objects implementing the protocols in
+`trading_automation.providers` when credentials are available.

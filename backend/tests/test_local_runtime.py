@@ -187,6 +187,12 @@ class ApiTests(unittest.TestCase):
         status, decision, _ = self.request("POST", "/proposals/approve", {"conversation_id": "api", "proposal_id": proposal["proposal_id"], "request_id": "approve", "reason": "demo", "actor_role": "PM"})
         self.assertEqual((status, decision["status"], decision["applied"]), (200, "approved", True))
 
+    def test_reports_reject_invalid_team_with_json_400(self):
+        status, value, headers = self.request("GET", "/automation/reports?team=bogus")
+        self.assertEqual(status, 400)
+        self.assertEqual(value, {"error": "ValueError", "message": "invalid team"})
+        self.assertEqual(headers["Content-Type"], "application/json; charset=utf-8")
+
     def test_chat_metadata_roundtrip_and_content_contract(self):
         context = {"role": "Risk", "team": "alpha",
                    "metadata": {"channel": "desk-chat", "team_label": "Alpha Desk"}}

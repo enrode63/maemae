@@ -23,6 +23,7 @@
       <button class="nav-item" data-view="trades"><span>↗</span> 트레이딩 매매일지</button>
       <button class="nav-item" data-view="positions"><span>◉</span> 현 포지션</button>
       <button class="nav-item" data-view="reports"><span>◫</span> 시황 리포트</button>
+      <button class="nav-item" data-view="tradingReports"><span>▦</span> Trading Reports</button>
       <button class="nav-item" data-view="research"><span>⌕</span> 연구 라이브러리</button>
       <button class="nav-item" data-view="notes"><span>▤</span> 개인 메모</button>
     </nav>
@@ -107,6 +108,21 @@
       </div>
     </section>
 
+    <section class="view" id="tradingReportsView" aria-labelledby="tradingReportsTitle">
+      <div class="section-intro reports-hero"><div><p class="eyebrow">TRADING PERFORMANCE</p><h2 id="tradingReportsTitle">Trading Reports</h2><p>팀별 실행 성과, 자산 배분과 주간 회고를 한 화면에서 확인합니다.</p></div><div class="report-sync" id="tradingReportSync" aria-live="polite">데이터 연결 대기</div></div>
+      <div class="team-tabs report-team-tabs" id="tradingReportTeams" role="tablist" aria-label="리포트 팀 선택"><button class="active" data-report-team="all" role="tab" aria-selected="true">전체</button><button data-report-team="scalping" role="tab" aria-selected="false">스캘핑팀</button><button data-report-team="day" role="tab" aria-selected="false">단타팀</button><button data-report-team="swing" role="tab" aria-selected="false">스윙팀</button><button data-report-team="longterm" role="tab" aria-selected="false">장기투자팀</button></div>
+      <div id="tradingReportState" class="report-state panel" role="status" aria-live="polite"><span class="state-spinner" aria-hidden="true"></span><div><b>Trading Reports를 불러오는 중입니다.</b><p>성과 API 연결 상태를 확인하고 있습니다.</p></div></div>
+      <div id="tradingReportContent" hidden>
+        <section class="report-kpis" id="reportKpis" aria-label="핵심 성과 지표"></section>
+        <div class="trading-report-layout">
+          <section class="panel report-block report-weekly"><div class="report-block-head"><div><p class="eyebrow">WEEKLY REVIEW</p><h3>주간 성과와 회고</h3></div><span id="reportWeek">—</span></div><div id="weeklyPerformance"></div></section>
+          <section class="panel report-block"><div class="report-block-head"><div><p class="eyebrow">ALLOCATION</p><h3>자산 배분</h3></div><span id="allocationTotal">—</span></div><div id="assetAllocation" class="allocation-list"></div></section>
+        </div>
+        <section class="panel report-block team-report-block"><div class="report-block-head"><div><p class="eyebrow">TEAM REPORTS</p><h3>팀별 리포트</h3></div></div><div id="teamReportList" class="team-report-list"></div></section>
+        <section class="sentiment-grid" aria-label="시장 공포 탐욕 지수"><article class="panel sentiment-card" id="cryptoSentiment"></article><article class="panel sentiment-card" id="usSentiment"></article></section>
+      </div>
+    </section>
+
     <section class="view" id="researchView">
       <div class="section-intro"><div><p class="eyebrow">X-GRADE RESEARCH</p><h2>연구 라이브러리</h2><p>전략 검증, 백테스트, 데이터 품질 및 공통 연구 기록입니다.</p></div><button class="primary-btn" id="newResearch">＋ 연구 메모</button></div>
       <div class="research-layout"><aside class="research-index panel"><div class="search-box compact">⌕ <input id="researchSearch" placeholder="연구 자료 검색" /></div><p class="nav-label">COLLECTIONS</p><button class="collection active" data-research-filter="all"><span>전체 자료</span><b>0</b></button><button class="collection" data-research-filter="backtest"><span>백테스트</span><b>0</b></button><button class="collection" data-research-filter="strategy"><span>전략 연구</span><b>0</b></button><button class="collection" data-research-filter="quality"><span>데이터·검증</span><b>0</b></button><div class="research-health"><span>RESEARCH HEALTH</span><strong>—</strong><div class="mini-progress"><i style="width:0"></i></div><small>아직 연구 자료가 없습니다.</small></div></aside><div class="research-cards" id="researchCards"></div></div>
@@ -145,7 +161,7 @@
         <label>손익비 (R)<input type="number" name="rr" step="0.1" min="0" placeholder="예: 2.5" required /></label>
         <label>투입 금액<input type="number" name="amount" min="0" placeholder="예: 1000000" required /></label>
         <label>손익 금액<input type="number" name="pnl" step="1" placeholder="승리 + / 패배 -" required /></label>
-        <label class="full-span">매매 근거<textarea name="reason" rows="3" placeholder="진입 근거와 지킨 원칙을 기록하세요." required></textarea></label>
+        <label class="full-span">매매 근거 <small>최소 60자</small><textarea name="reason" rows="4" minlength="60" placeholder="진입 조건, 확인 지표, 무효화 기준을 포함해 60자 이상 기록하세요." required></textarea></label>
         <label class="upload-box full-span"><input type="file" name="chart" accept="image/*" hidden /><span class="upload-icon">↥</span><strong>차트 이미지 올리기</strong><small>PNG, JPG · 최대 2MB</small><em id="fileName">파일을 선택하거나 드래그하세요</em></label>
       </div>
       <p class="form-error" id="formError"></p>
