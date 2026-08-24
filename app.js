@@ -1,11 +1,5 @@
 const STORAGE_KEY='edge-journal-v1';
-const seedTrades=[
- {id:1,date:'2026-08-12',symbol:'BTC/USDT',team:'day',direction:'long',leverage:5,result:'win',rr:2.4,amount:1000000,pnl:184000,reason:'일봉 지지 구간 반등과 거래량 증가 확인',chart:null},
- {id:2,date:'2026-08-14',symbol:'NVDA',team:'swing',direction:'long',leverage:1,result:'loss',rr:1.5,amount:800000,pnl:-72000,reason:'돌파 매매, 거래량 확인이 부족했음',chart:null},
- {id:3,date:'2026-08-16',symbol:'ETH/USDT',team:'scalping',direction:'short',leverage:3,result:'win',rr:2.1,amount:1200000,pnl:156000,reason:'4시간봉 추세선 리테스트 후 양봉 전환',chart:null},
- {id:4,date:'2026-08-18',symbol:'TSLA',team:'longterm',direction:'long',leverage:1,result:'win',rr:1.8,amount:700000,pnl:91000,reason:'전고점 돌파 후 지지 확인, 계획가 진입',chart:null}
-];
-let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')||{trades:seedTrades,reviews:{},notes:[]};
+let state=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')||{trades:[],reviews:{},notes:[]};
 let activeNoteId=null;
 let chartPeriod='day';
 let editingTradeId=null;
@@ -80,14 +74,7 @@ $('#newNote').onclick=()=>{const n={id:Date.now(),title:'새 메모',body:'',ima
 document.addEventListener('change',e=>{if(e.target.id==='noteImageInput')addImagesToActiveNote([...e.target.files])});
 document.addEventListener('paste',e=>{if(!$('#notesView').classList.contains('active')||!activeNoteId)return;const images=[...e.clipboardData.items].filter(item=>item.type.startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);if(!images.length)return;e.preventDefault();addImagesToActiveNote(images)});
 
-const researchItems=[
- {type:'backtest',label:'BACKTEST',title:'변동성 돌파 전략 v2.3',summary:'ATR 필터와 거래대금 조건을 추가한 5년 구간 재검증',author:'전략 백테스트 에이전트',date:'08.23',status:'검증 완료',metric:'CAGR 18.4%',tags:['ATR','돌파','KOSPI']},
- {type:'strategy',label:'STRATEGY',title:'장초반 갭 상승 지속성 연구',summary:'갭 크기와 첫 15분 체결강도를 조합한 진입 조건 초안',author:'AutoResearch 에이전트',date:'08.23',status:'동료검토 중',metric:'N = 1,284',tags:['갭','체결강도']},
- {type:'quality',label:'DATA QA',title:'외국인 수급 데이터 결측 감사',summary:'7월 원천 데이터의 시차와 누락 구간을 식별하고 보정 규칙 기록',author:'데이터 품질관리 에이전트',date:'08.22',status:'조치 필요',metric:'결측 0.7%',tags:['데이터','감사']},
- {type:'strategy',label:'MEMO',title:'반도체 순환매 선행지표 후보',summary:'장비주 거래대금이 대형주 수급에 선행하는지 검증하기 위한 연구 메모',author:'시장 순환매 에이전트',date:'08.21',status:'아이디어',metric:'3 HYPOTHESES',tags:['반도체','순환매']},
- {type:'backtest',label:'BACKTEST',title:'스윙 추세 추종 손절폭 민감도',summary:'1.5~3.0 ATR 구간별 승률, 기대값, 최대낙폭 비교',author:'성과평가 에이전트',date:'08.20',status:'검증 완료',metric:'MDD -8.2%',tags:['스윙','리스크']},
- {type:'quality',label:'AUDIT',title:'프롬프트 v1.8 변경 영향 기록',summary:'거시 판단 출력 형식 변경 전후의 일관성과 근거 인용률 비교',author:'모델·프롬프트 버전관리',date:'08.19',status:'승인 완료',metric:'+12% 일관성',tags:['모델','버전']}
-];
+const researchItems=[];
 const orgTeams=[
  {grade:'A',cls:'a',name:'경제 시황팀',count:8,desc:'시장 전체 방향과 경제 환경 분석',agents:['경제 데이터','금리·통화정책','환율·채권','경기 사이클','글로벌 경제','유동성·시장심리','Bull / Bear','팀 매니저']},
  {grade:'A',cls:'a',name:'미시 시황팀',count:8,desc:'업종·종목·수급 분석',agents:['업종 분석','종목 수급','거래량·거래대금','기관·외국인 매매','뉴스·공시 반응','시장 순환매','이상 움직임 감지','팀 매니저']},
@@ -128,7 +115,7 @@ const configuredChatApiBase=location.hostname.endsWith('.vercel.app')?window.EDG
 const requestedChatApiBase=configuredChatApiBase;
 const CHAT_API_BASE=normalizeChatApiBase(requestedChatApiBase)||CHAT_API_DEFAULT;
 if(String(requestedChatApiBase)!==CHAT_API_DEFAULT&&CHAT_API_BASE===CHAT_API_DEFAULT)console.warn('Blocked unsafe Fund API base URL. Add its origin to EDGE_FUND_API_ALLOWLIST to allow it.');
-const chatSeed={center:[{role:'agent',agent:'총괄 오케스트레이터',time:'08:41',text:'좋은 아침입니다. 경제·미시 시황팀의 장전 리포트를 취합했습니다. 오늘 통합 스탠스는 NEUTRAL+, 신뢰도는 62%입니다.'},{role:'agent',agent:'통합 리스크 매니저',time:'08:42',text:'현재 3개 포지션의 총 리스크 사용률은 34%입니다. BTC 포지션이 손절 기준에 가장 가까우므로 우선 모니터링하겠습니다.'}],macro:[{role:'agent',agent:'경제 시황팀 매니저',time:'08:35',text:'장기금리 반등과 달러 강세가 상단을 제한하고 있습니다. 유동성은 우호적이지만 추격 매수보다 확인 후 대응이 적절합니다.'}],micro:[{role:'agent',agent:'미시 시황팀 매니저',time:'08:36',text:'반도체 중심의 기관 수급은 유지 중이며 거래대금 급증 종목 7개를 감지했습니다.'}],scalping:[{role:'agent',agent:'스캘핑팀 매니저',time:'08:39',text:'현재 체결 밀도와 변동성이 기준 이하라 신규 포지션 없이 관망 중입니다.'}],day:[{role:'agent',agent:'단타팀 매니저',time:'08:39',text:'BTC/USDT 롱 포지션을 운용 중입니다. $63,900 손절 기준은 변경하지 않습니다.'}],swing:[{role:'agent',agent:'스윙팀 매니저',time:'08:38',text:'NVDA는 돌파 후 지지를 유지하고 있습니다. 목표가 $139까지 추세 추종 관점입니다.'}],longterm:[{role:'agent',agent:'장기투자팀 매니저',time:'08:37',text:'MSFT 장기 논거는 유지됩니다. 단기 가격보다 클라우드 성장률과 현금흐름을 재평가하겠습니다.'}],research:[{role:'agent',agent:'AutoResearch 에이전트',time:'08:34',text:'변동성 돌파 전략 v2.3 백테스트가 완료되었습니다. 재현성 검증 후 센터팀 승인을 요청할 예정입니다.'}]};
+const chatSeed={center:[],macro:[],micro:[],scalping:[],day:[],swing:[],longterm:[],research:[]};
 let chatState=JSON.parse(localStorage.getItem(CHAT_KEY)||'null')||chatSeed,activeChannel='center',chatBusy=false;
 let chatConversations=JSON.parse(localStorage.getItem(CHAT_CONVERSATION_KEY)||'{}');
 function chatTime(){return new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date())}

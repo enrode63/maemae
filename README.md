@@ -22,6 +22,14 @@ npx serve .
 
 > 데이터는 현재 브라우저에만 저장됩니다. 브라우저 데이터를 삭제하면 기록도 사라질 수 있습니다.
 
+초기 화면은 예시 데이터 없이 빈 상태로 시작합니다. 이전 버전에서 이미 예시 데이터가 저장된 브라우저는 업데이트 후에도 `localStorage` 내용이 보존되므로 기존 항목이 계속 보일 수 있습니다. 해당 브라우저에 보존할 실제 기록이 없는 경우에만 개발자 콘솔에서 아래 명령을 실행한 뒤 새로고침하세요.
+
+```js
+localStorage.removeItem('edge-journal-v1');
+localStorage.removeItem('edge-fund-chat-v1');
+location.reload();
+```
+
 ## Fund Team 로컬 API 연결
 
 로컬 개발에서 채팅은 기본적으로 `http://localhost:8765`의 Fund Team API를 사용합니다. Vercel hostname에서는 동일 출처 `/api/fund`가 기본값입니다. API 주소는 다음 우선순위로 설정됩니다.
