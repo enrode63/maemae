@@ -80,7 +80,7 @@ class AutomationService:
         result = score_signals(team, raw.get("signals") if configured else None)
         quality = str(raw.get("data_quality", "realtime")).lower()
         if quality not in {"realtime", "delayed", "free"}:
-            result.update(decision="NO_TRADE", score=0.0)
+            result["decision"] = "NO_TRADE"
             result["missing_signals"] = sorted(set(result["missing_signals"] + ["valid_data_quality"]))
         if not configured:
             result["decision"] = "NO_TRADE"
@@ -131,18 +131,98 @@ class AutomationService:
                     if not symbols:
                         raise ProviderUnavailable("market universe unavailable")
                     snapshots = self.market.snapshot(symbols)
-                    content = self.reporter.generate(market, snapshots)
+                    if not isinstance(snapshots, dict):
+                        raise ProviderUnavailable("market snapshot unavailable")
+                    report_status = "ready"
+                    try:
+                        content = self.reporter.generate(market, snapshots)
+                    except ProviderUnavailable:
+                        content, report_status = "Report provider is not configured.", "not_configured"
+                    except Exception:
+                        content, report_status = "Report provider failed safely.", "provider_error"
+                    cycle_decisions, cycle_trades = self._process_snapshots(
+                        market, key, symbols, snapshots, now)
                     report = {"id": uuid4().hex, "market": market, "scheduled_date": schedule[market]["local_date"],
-                              "created_at": now.isoformat(), "symbols": symbols, "content": str(content)}
+                              "created_at": now.isoformat(), "symbols": symbols, "content": str(content),
+                              "status": report_status,
+                              "decision_ids": [item["id"] for item in cycle_decisions],
+                              "trade_ids": [item["id"] for item in cycle_trades]}
                     self._state["reports"].append(report)
                     self._state["completed_jobs"][key] = report["id"]
-                    results.append({"market": market, "state": "generated", "report_id": report["id"]})
+                    results.append({"market": market, "state": "generated", "report_id": report["id"],
+                                    "decisions": len(cycle_decisions), "trades": len(cycle_trades)})
                 except ProviderUnavailable as exc:
-                    results.append({"market": market, "state": "blocked_not_configured", "reason": str(exc)})
+                    results.append({"market": market, "state": "blocked_not_configured",
+                                    "decision": "NO_TRADE", "trades": 0, "reason": str(exc)})
                 except Exception:
-                    results.append({"market": market, "state": "provider_error"})
+                    results.append({"market": market, "state": "provider_error",
+                                    "decision": "NO_TRADE", "trades": 0})
             self._save()
         return {"mode": "simulation", "jobs": results}
+
+    def _process_snapshots(self, market: str, cycle_key: str, symbols: list[str],
+                           snapshots: dict[str, Any], now: datetime) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Select one candidate per team and append simulation-only ledger entries."""
+        decisions, trades = [], []
+        for team in sorted(TRADING_TEAMS):
+            candidates = []
+            for symbol in symbols:
+                snapshot = snapshots.get(symbol)
+                snapshot = snapshot if isinstance(snapshot, dict) else {}
+                teams = snapshot.get("teams") if isinstance(snapshot.get("teams"), dict) else {}
+                team_value = teams.get(team, snapshot.get(team, {}))
+                team_value = team_value if isinstance(team_value, dict) else {}
+                signal_sets = snapshot.get("signals") if isinstance(snapshot.get("signals"), dict) else {}
+                signals = team_value.get("signals", signal_sets.get(team))
+                scored = score_signals(team, signals)
+                candidates.append((scored["score"], symbol, snapshot, team_value, scored))
+            _, symbol, snapshot, team_value, scored = max(candidates, key=lambda value: (value[0], value[1]))
+            quality = str(team_value.get("data_quality", snapshot.get("data_quality", "realtime"))).lower()
+            side = str(team_value.get("side", snapshot.get("side", ""))).upper()
+            if quality != "realtime":
+                scored["decision"] = "NO_TRADE"
+                scored["missing_signals"] = sorted(set(scored["missing_signals"] + ["realtime_data"]))
+            if side not in {"BUY", "SELL"}:
+                scored["decision"] = "NO_TRADE"
+                scored["missing_signals"] = sorted(set(scored["missing_signals"] + ["buy_or_sell_side"]))
+            rationale = (f"The {team} ensemble selected {symbol} as the highest-scoring {market} candidate "
+                         f"for this scheduled simulation cycle; data checks and threshold rules produced {scored['decision']}.")
+            decision = {"id": uuid4().hex, "cycle_key": cycle_key, "market": market, "symbol": symbol,
+                        "team": team, "mode": "simulation", "live_ordering": False,
+                        "data_quality": quality, "action": side if scored["decision"] == "PAPER_TRADE" else "NO_TRADE",
+                        **scored, "rationale": rationale, "created_at": now.isoformat()}
+            self._state["decisions"].append(decision)
+            decisions.append(decision)
+            if scored["decision"] != "PAPER_TRADE":
+                continue
+            price = team_value.get("price", snapshot.get("price", snapshot.get("close")))
+            quantity = team_value.get("quantity", snapshot.get("quantity", 1))
+            try:
+                price_value, quantity_value = Decimal(str(price)), Decimal(str(quantity))
+            except Exception:
+                decision["decision"], decision["action"] = "NO_TRADE", "NO_TRADE"
+                decision["missing_signals"] = sorted(set(decision["missing_signals"] + ["valid_price_quantity"]))
+                continue
+            if (not price_value.is_finite() or not quantity_value.is_finite()
+                    or price_value <= 0 or quantity_value <= 0):
+                decision["decision"], decision["action"] = "NO_TRADE", "NO_TRADE"
+                decision["missing_signals"] = sorted(set(decision["missing_signals"] + ["valid_price_quantity"]))
+                continue
+            trade = {"id": uuid4().hex, "cycle_key": cycle_key, "decision_id": decision["id"],
+                     "mode": "simulation", "live_ordering": False, "market": market, "symbol": symbol,
+                     "team": team, "side": side, "quantity": str(quantity_value), "price": str(price_value),
+                     "score": scored["score"], "signal_breakdown": scored["signal_breakdown"],
+                     "rationale": rationale, "risk": "0", "reward": "0", "pnl": "0", "return_pct": "0",
+                     "created_at": now.isoformat()}
+            self._state["trades"].append(trade)
+            trades.append(trade)
+        return decisions, trades
+
+    def trades(self, team: str | None = None) -> list[dict[str, Any]]:
+        selected = normalize_team(team)
+        with self._lock:
+            return [dict(item) for item in self._state["trades"]
+                    if selected is None or item["team"] == selected]
 
     def reports(self, team: str | None = None) -> dict[str, Any]:
         with self._lock:
@@ -185,6 +265,10 @@ class AutomationService:
             ensemble_updated_at = max(
                 (item.get("created_at", "") for item in ensemble_teams), default=""
             ) or None
+            decision_items = [dict(item) for item in self._state["decisions"]
+                              if selected is None or item["team"] == selected]
+            trade_items = [dict(item) for item in self._state["trades"]
+                           if selected is None or item["team"] == selected]
             return {"kpis": {"cumulativePnl": float(performance["pnl"]),
                               "averageRr": float(performance["rr"]) if performance["rr"] is not None else None,
                               "positions": sum(Decimal(value) != 0 for value in performance["positions"].values()),
@@ -197,6 +281,7 @@ class AutomationService:
                                "improvements": latest.get("improvements", [])},
                     "sentiment": {"crypto": {}, "usStocks": {}},
                     "ensemble": {"updatedAt": ensemble_updated_at, "teams": ensemble_teams},
+                    "trades": trade_items, "decisions": decision_items, "performance": performance,
                     "updatedAt": datetime.now(timezone.utc).isoformat()}
 
     def record_trade(self, raw: dict[str, Any]) -> dict[str, Any]:

@@ -6,6 +6,7 @@ import unittest
 from trading_automation.providers import UnconfiguredProvider
 from trading_automation.schedule import schedule_state
 from trading_automation.service import AutomationService
+from trading_automation.scoring import TEAM_SCORE_CONFIGS
 
 
 class FakeMarket:
@@ -20,6 +21,16 @@ class FakeReporter:
     name = "fake-reporter"
     def generate(self, market, snapshots):
         return f"{market} report for {len(snapshots)} symbols"
+
+
+class ScoredMarket(FakeMarket):
+    def snapshot(self, symbols):
+        result = {}
+        for index, symbol in enumerate(symbols):
+            result[symbol] = {"close": 100 + index, "side": "BUY", "data_quality": "realtime",
+                              "signals": {team: {name: 90 - index for name in config.weights}
+                                          for team, config in TEAM_SCORE_CONFIGS.items()}}
+        return result
 
 
 class ScheduleTests(unittest.TestCase):
@@ -57,6 +68,49 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual([j["state"] for j in second["jobs"]],
                          ["not_due_or_already_completed", "not_due_or_already_completed"])
 
+    def test_scheduled_ensemble_flows_to_linked_paper_ledger_and_report(self):
+        service = AutomationService(Path(self.temp.name), ScoredMarket(), FakeReporter())
+        now = datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc)
+        first = service.run_due(now)
+        self.assertEqual(sum(job.get("trades", 0) for job in first["jobs"]), 8)
+        trades = service.trades()
+        decisions = service.decisions()
+        self.assertEqual(len(trades), 8)
+        self.assertEqual(len(decisions), 8)
+        self.assertEqual({trade["symbol"] for trade in trades}, {"AAPL", "BTC"})
+        by_id = {decision["id"]: decision for decision in decisions}
+        for trade in trades:
+            decision = by_id[trade["decision_id"]]
+            self.assertEqual(trade["score"], decision["score"])
+            self.assertEqual(trade["signal_breakdown"], decision["signal_breakdown"])
+            self.assertGreaterEqual(len(trade["rationale"]), 60)
+            self.assertFalse(trade["live_ordering"])
+        report = service.reports()
+        self.assertEqual(report["trades"], trades)
+        self.assertEqual(report["decisions"], decisions)
+        self.assertEqual(report["performance"]["trade_count"], 8)
+        service.run_due(now)
+        self.assertEqual(len(service.trades()), 8)
+
+    def test_delayed_snapshot_records_no_trade_decisions(self):
+        market = ScoredMarket()
+        original = market.snapshot
+        market.snapshot = lambda symbols: {
+            symbol: {**value, "data_quality": "delayed"}
+            for symbol, value in original(symbols).items()
+        }
+        service = AutomationService(Path(self.temp.name), market, FakeReporter())
+        service.run_due(datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(service.trades(), [])
+        self.assertTrue(service.decisions())
+        self.assertEqual({item["decision"] for item in service.decisions()}, {"NO_TRADE"})
+
+    def test_market_snapshot_still_drives_ledger_without_report_provider(self):
+        service = AutomationService(Path(self.temp.name), ScoredMarket())
+        result = service.run_due(datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(sum(job.get("trades", 0) for job in result["jobs"]), 8)
+        self.assertEqual(len(service.trades()), 8)
+
     def test_paper_trade_rationale_and_team_contract(self):
         service = AutomationService(Path(self.temp.name), FakeMarket())
         base = {"symbol": "AAPL", "team": "day", "side": "BUY", "quantity": "2", "price": "100"}
@@ -81,7 +135,8 @@ class AutomationTests(unittest.TestCase):
             service.record_trade({**base, "symbol": "NOTREAL", "rationale": "x" * 60})
 
         report = service.reports("all")
-        self.assertEqual(set(report), {"kpis", "teams", "assetAllocation", "weekly", "sentiment", "ensemble", "updatedAt"})
+        self.assertEqual(set(report), {"kpis", "teams", "assetAllocation", "weekly", "sentiment", "ensemble",
+                                       "trades", "decisions", "performance", "updatedAt"})
         self.assertEqual(report["kpis"]["cumulativePnl"], 5.0)
 
     def test_reporting_services_reject_invalid_team_and_accept_overall_scope(self):

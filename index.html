@@ -114,6 +114,7 @@
       <div id="tradingReportState" class="report-state panel" role="status" aria-live="polite"><span class="state-spinner" aria-hidden="true"></span><div><b>Trading Reports를 불러오는 중입니다.</b><p>성과 API 연결 상태를 확인하고 있습니다.</p></div></div>
       <div id="tradingReportContent" hidden>
         <section class="report-kpis" id="reportKpis" aria-label="핵심 성과 지표"></section>
+        <section class="panel report-block" aria-labelledby="paperTradeReportTitle"><div class="report-block-head"><div><p class="eyebrow">PAPER TRADE LEDGER</p><h3 id="paperTradeReportTitle">자동매매 기록</h3></div><span>읽기 전용</span></div><div class="table-wrap"><table><thead><tr><th>시간</th><th>팀</th><th>종목</th><th>Side</th><th>가격</th><th>수량</th><th>손익</th></tr></thead><tbody id="reportPaperTrades"></tbody></table></div></section>
         <section class="panel report-block ensemble-block" aria-labelledby="ensembleTitle">
           <div class="report-block-head"><div><p class="eyebrow">ENSEMBLE SIGNALS</p><h3 id="ensembleTitle">팀별 앙상블 점수</h3></div><span id="ensembleUpdated">읽기 전용</span></div>
           <div id="ensembleSignals" class="ensemble-signals" aria-live="polite"></div>
@@ -141,6 +142,8 @@
     <section class="view" id="tradesView">
       <div class="team-tabs" data-trade-tabs><button class="active" data-team="all">전체 팀</button><button data-team="scalping">스캘핑팀</button><button data-team="day">단타팀</button><button data-team="swing">스윙팀</button><button data-team="longterm">장기투자팀</button></div>
       <div class="section-toolbar"><div class="search-box">⌕ <input id="tradeSearch" placeholder="종목 또는 근거 검색" /></div><div class="trade-toolbar-actions"><select id="tradeFilter"><option value="all">전체 결과</option><option value="win">승리</option><option value="loss">패배</option></select><button class="primary-btn" id="openTradeModal">＋ 매매 기록</button></div></div>
+      <div id="paperTradeState" class="paper-trade-state" role="status" aria-live="polite"></div>
+      <div id="paperTradeKpis" class="paper-trade-kpis" aria-label="자동 paper trade 요약"></div>
       <div class="trade-grid" id="tradeGrid"></div>
     </section>
 

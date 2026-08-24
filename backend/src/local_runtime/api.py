@@ -122,6 +122,7 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                       "/automation/team-configs": runtime.automation.team_configs,
                       "/automation/scores": lambda: runtime.automation.decisions(parse_qs(parsed.query).get("team", [None])[0]),
                       "/automation/decisions": lambda: runtime.automation.decisions(parse_qs(parsed.query).get("team", [None])[0]),
+                      "/automation/paper-trades": lambda: runtime.automation.trades(parse_qs(parsed.query).get("team", [None])[0]),
                       "/automation/reports": lambda: runtime.automation.reports(parse_qs(parsed.query).get("team", [None])[0]),
                       "/automation/weekly-evaluations": runtime.automation.evaluations,
                       "/automation/performance": lambda: runtime.automation.performance(parse_qs(parsed.query).get("team", [None])[0])}
