@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demo-trading"
+version = "0.1.0"
+description = "Deterministic, API-free demo trading engine"
+requires-python = ">=3.10"
+
+[project.scripts]
+demo-trading = "demo_trading.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

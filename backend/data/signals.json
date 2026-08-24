@@ -1,0 +1,5 @@
+[
+  {"order_id":"demo-001","symbol":"DEMO","side":"BUY","quantity":"10","limit_price":"101","agent":"bull-agent","pm_approved":true,"pm_reason":"within mandate"},
+  {"order_id":"demo-002","symbol":"DEMO","side":"SELL","quantity":"4","limit_price":"99","agent":"bear-agent","pm_approved":true,"pm_reason":"take profit plan"},
+  {"order_id":"demo-003","symbol":"SAFE","side":"BUY","quantity":"3","limit_price":"51","agent":"bull-agent","pm_approved":false,"pm_reason":"insufficient conviction"}
+]
