@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="매매 기록과 복기를 한곳에서 관리하는 트레이딩 저널" />
-  <title>EDGE — Trading Journal</title>
+  <meta name="description" content="AI 펀드팀의 매매, 시황, 연구를 통합 관리하는 투자 운영 대시보드" />
+  <title>EDGE — AI Fund OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,38 +13,49 @@
 </head>
 <body>
   <aside class="sidebar">
-    <a class="brand" href="#"><span class="brand-mark">E</span><span>EDGE</span></a>
+    <a class="brand" href="#"><span class="brand-mark">E</span><span><b>EDGE</b><small>AI FUND OS</small></span></a>
     <nav aria-label="주 메뉴">
-      <button class="nav-item active" data-view="dashboard"><span>⌁</span> 대시보드</button>
-      <button class="nav-item" data-view="trades"><span>↗</span> 매매일지</button>
-      <button class="nav-item" data-view="reviews"><span>◎</span> 10회 복기</button>
-      <button class="nav-item" data-view="notes"><span>▤</span> 메모장</button>
+      <p class="nav-label">COMMAND</p>
+      <button class="nav-item active" data-view="dashboard"><span>⌁</span> 센터 대시보드</button>
+      <button class="nav-item" data-view="chat"><span>◌</span> 네트워크</button>
+      <button class="nav-item" data-view="organization"><span>◇</span> 팀 조직도</button>
+      <p class="nav-label">OPERATIONS</p>
+      <button class="nav-item" data-view="trades"><span>↗</span> 트레이딩 매매일지</button>
+      <button class="nav-item" data-view="positions"><span>◉</span> 현 포지션</button>
+      <button class="nav-item" data-view="reports"><span>◫</span> 시황 리포트</button>
+      <button class="nav-item" data-view="research"><span>⌕</span> 연구 라이브러리</button>
+      <button class="nav-item" data-view="notes"><span>▤</span> 개인 메모</button>
     </nav>
-    <div class="sidebar-quote"><span>RULE #01</span><p>좋은 매매는 수익이 아니라<br>계획을 지킨 매매다.</p></div>
-    <div class="sidebar-footer"><span class="status-dot"></span> 브라우저에 자동 저장 중</div>
+    <div class="sidebar-quote"><span>INVESTMENT PRINCIPLE</span><p>분석은 분산하고,<br>책임은 중앙에 둔다.</p></div>
+    <div class="sidebar-footer"><span class="status-dot"></span> TEMPLATE MODE · 연동 대기</div>
   </aside>
 
   <main>
     <header class="topbar">
-      <div><p class="eyebrow" id="pageEyebrow">TRADING OVERVIEW</p><h1 id="pageTitle">오늘도 원칙대로.</h1></div>
-      <div class="header-actions"><span class="today" id="today"></span><button class="primary-btn" id="openTradeModal">＋ 매매 기록</button></div>
+      <div><p class="eyebrow" id="pageEyebrow">FUND COMMAND CENTER</p><h1 id="pageTitle">AI 펀드 운영 현황</h1></div>
     </header>
 
     <section class="view active" id="dashboardView">
+      <div class="command-strip"><div><span class="live-pulse"></span><p><b>센터팀 브리핑</b><small>현재 중대 리스크 없음 · 모든 실행은 CIO 최종 승인 대기</small></p></div><span>LAST SYNC&nbsp; 08:40 KST</span></div>
       <div class="stats-grid">
         <article class="stat-card"><div class="stat-head"><span>누적 손익</span><i class="icon mint">₩</i></div><strong id="totalPnl">₩0</strong><small id="pnlSub">총 0번의 매매</small></article>
         <article class="stat-card"><div class="stat-head"><span>승률</span><i class="icon amber">%</i></div><strong id="winRate">0%</strong><small id="winSub">0승 0패</small></article>
         <article class="stat-card"><div class="stat-head"><span>평균 손익비</span><i class="icon violet">R</i></div><strong id="avgRr">0.0R</strong><small>기록된 매매 기준</small></article>
-        <article class="stat-card"><div class="stat-head"><span>이번 복기까지</span><i class="icon blue">◎</i></div><strong id="reviewProgress">0 / 10</strong><div class="mini-progress"><span id="progressBar"></span></div></article>
+        <article class="stat-card"><div class="stat-head"><span>운용 중 포지션</span><i class="icon blue">◉</i></div><strong>3</strong><small>스윙 1 · 단타 1 · 장기 1</small></article>
+      </div>
+      <div class="fund-overview-grid">
+        <article class="panel conviction-panel"><div class="panel-head"><div><p class="eyebrow">MARKET CONVICTION</p><h2>오늘의 통합 시황</h2></div><span class="stance neutral">NEUTRAL+</span></div><div class="conviction-score"><strong>62</strong><div><b>완만한 위험선호</b><p>유동성은 우호적이나 주요 지수 저항 구간 진입. 신규 비중 확대보다 확인 후 대응.</p></div></div><div class="signal-bars"><span><i style="width:74%"></i><small>경제 시황 74</small></span><span><i style="width:58%"></i><small>미시 시황 58</small></span><span><i style="width:66%"></i><small>시장 심리 66</small></span></div></article>
+        <article class="panel desk-status"><div class="panel-head"><div><p class="eyebrow">DESK STATUS</p><h2>전략팀 운영 상태</h2></div><button class="text-btn" data-go="organization">조직 전체 →</button></div><div class="desk-row"><span class="grade b">B</span><div><b>스캘핑팀</b><small>관망 · 변동성 부족</small></div><em>0 포지션</em></div><div class="desk-row"><span class="grade b">B</span><div><b>단타팀</b><small>2개 셋업 감시</small></div><em class="watch">WATCH</em></div><div class="desk-row"><span class="grade b">B</span><div><b>스윙팀</b><small>1개 포지션 운용</small></div><em class="active-state">ACTIVE</em></div><div class="desk-row"><span class="grade b">B</span><div><b>장기투자팀</b><small>리밸런싱 검토</small></div><em>REVIEW</em></div></article>
       </div>
       <div class="dashboard-grid">
         <article class="panel chart-panel">
           <div class="panel-head"><div><p class="eyebrow">PERFORMANCE</p><h2>누적 수익률</h2></div><div class="chart-tools"><div class="period-tabs" aria-label="그래프 기간"><button class="active" data-period="day">일</button><button data-period="week">주</button><button data-period="month">월</button><button data-period="year">년</button></div><div class="chart-legend"><span></span> 누적 수익률 <b id="returnBadge">+0.0%</b></div></div></div>
           <div class="chart-wrap"><canvas id="performanceChart"></canvas><div class="empty-chart" id="emptyChart">첫 매매를 기록하면 수익 곡선이 시작됩니다.</div></div>
         </article>
-        <article class="panel review-preview">
-          <div class="panel-head"><div><p class="eyebrow">REVIEW CYCLE</p><h2>10회 복기</h2></div><button class="text-btn" data-go="reviews">전체 보기 →</button></div>
-          <div id="reviewPreview"></div>
+        <article class="panel review-preview position-preview">
+          <div class="panel-head"><div><p class="eyebrow">OPEN POSITIONS</p><h2>현 포지션</h2></div><button class="text-btn" data-go="positions">전체 보기 →</button></div>
+          <div class="position-mini"><div><span class="position-symbol">NVDA</span><b class="positive">+3.82%</b><small>스윙팀 · LONG</small></div><div><span class="position-symbol">BTC/USDT</span><b class="negative">-0.64%</b><small>단타팀 · LONG</small></div><div><span class="position-symbol">MSFT</span><b class="positive">+11.20%</b><small>장기투자팀 · LONG</small></div></div>
+          <button class="primary-btn full" data-go="positions">포지션 모니터 열기</button>
         </article>
       </div>
       <article class="panel recent-panel">
@@ -53,14 +64,71 @@
       </article>
     </section>
 
-    <section class="view" id="tradesView">
-      <div class="section-toolbar"><div class="search-box">⌕ <input id="tradeSearch" placeholder="종목 또는 근거 검색" /></div><select id="tradeFilter"><option value="all">전체 결과</option><option value="win">승리</option><option value="loss">패배</option></select></div>
-      <div class="trade-grid" id="tradeGrid"></div>
+    <section class="view" id="chatView">
+      <div class="fund-chat-layout">
+        <aside class="chat-channels panel">
+          <div class="chat-channel-head"><div><p class="eyebrow">FUND NETWORK</p><h2>대화 채널</h2></div><span class="online-count"><i></i> 8 ONLINE</span></div>
+          <div class="chat-search search-box compact">⌕ <input id="channelSearch" placeholder="팀 또는 에이전트 검색" /></div>
+          <p class="nav-label">COMMAND</p>
+          <button class="channel active" data-channel="center" data-name="센터팀" data-desc="전체 지휘 · 최종 승인"><span class="channel-avatar s">S</span><span><b>센터팀</b><small>CIO · 오케스트레이터</small></span><i class="unread">3</i></button>
+          <p class="nav-label">MARKET INTELLIGENCE</p>
+          <button class="channel" data-channel="macro" data-name="경제 시황팀" data-desc="거시경제 · 금리 · 유동성"><span class="channel-avatar a">A</span><span><b>경제 시황팀</b><small>8 agents</small></span></button>
+          <button class="channel" data-channel="micro" data-name="미시 시황팀" data-desc="업종 · 수급 · 뉴스"><span class="channel-avatar a">A</span><span><b>미시 시황팀</b><small>8 agents</small></span></button>
+          <p class="nav-label">TRADING DESKS</p>
+          <button class="channel" data-channel="scalping" data-name="스캘핑팀" data-desc="초단기 체결 · 호가"><span class="channel-avatar b">B</span><span><b>스캘핑팀</b><small>8 agents</small></span></button>
+          <button class="channel" data-channel="day" data-name="단타팀" data-desc="당일 · 수일 전략"><span class="channel-avatar b">B</span><span><b>단타팀</b><small>8 agents</small></span></button>
+          <button class="channel" data-channel="swing" data-name="스윙팀" data-desc="추세 · 패턴 · 모멘텀"><span class="channel-avatar b">B</span><span><b>스윙팀</b><small>9 agents</small></span></button>
+          <button class="channel" data-channel="longterm" data-name="장기투자팀" data-desc="기업가치 · 장기 성장"><span class="channel-avatar b">B</span><span><b>장기투자팀</b><small>9 agents</small></span></button>
+          <p class="nav-label">RESEARCH</p>
+          <button class="channel" data-channel="research" data-name="공통 연구·통제팀" data-desc="연구 · 검증 · 감사"><span class="channel-avatar x">X</span><span><b>공통 연구·통제팀</b><small>6 agents</small></span></button>
+        </aside>
+        <section class="chat-room panel">
+          <header class="chat-room-head"><div class="chat-room-identity"><span class="channel-avatar s" id="chatAvatar">S</span><div><h2 id="chatTeamName">센터팀</h2><p id="chatTeamDesc">전체 지휘 · 최종 승인</p></div></div><div class="chat-room-actions"><span><i></i> 응답 가능</span><button title="대화 검색">⌕</button><button title="채널 정보">ⓘ</button></div></header>
+          <div class="chat-context"><span>CONTEXT</span><button data-prompt="오늘의 통합 시황을 브리핑해줘">오늘 시황 브리핑</button><button data-prompt="현재 포지션의 핵심 리스크를 점검해줘">포지션 리스크 점검</button><button data-prompt="각 트레이딩팀의 현재 의견을 종합해줘">팀 의견 종합</button></div>
+          <div class="chat-messages" id="chatMessages"></div>
+          <form class="chat-composer" id="chatForm"><div class="composer-tools"><button type="button" title="파일 첨부">＋</button><button type="button" title="리포트 연결">▤</button><button type="button" title="포지션 연결">↗</button></div><textarea id="chatInput" rows="1" placeholder="센터팀에게 메시지를 보내세요..." required></textarea><button class="chat-send" type="submit" aria-label="전송">↑</button><small>Enter 전송 · Shift + Enter 줄바꿈</small></form>
+        </section>
+        <aside class="chat-inspector panel"><p class="eyebrow">CONVERSATION CONTEXT</p><h3>현재 공유된 정보</h3><div class="context-card"><span>MARKET STANCE</span><strong>NEUTRAL+</strong><small>신뢰도 62%</small></div><div class="context-card"><span>OPEN POSITIONS</span><strong>3</strong><small>미실현 +₩418,600</small></div><div class="context-card"><span>ACTIVE REPORTS</span><strong>4</strong><small>오늘 업데이트</small></div><div class="inspector-agents"><span>참여 에이전트</span><div><i class="s">S</i><p><b>총괄 오케스트레이터</b><small>대화 조정</small></p><em>ONLINE</em></div><div><i class="s">S</i><p><b>CIO·투자위원회</b><small>최종 판단</small></p><em>ONLINE</em></div><div><i class="s">S</i><p><b>통합 리스크 매니저</b><small>리스크 검토</small></p><em>ONLINE</em></div></div><div class="template-notice"><i>ⓘ</i><p><b>템플릿 모드</b><small>AI 에이전트 연동 전입니다. 대화는 이 브라우저에만 저장됩니다.</small></p></div></aside>
+      </div>
     </section>
 
-    <section class="view" id="reviewsView">
-      <div class="review-hero panel"><div><p class="eyebrow">DELIBERATE PRACTICE</p><h2>10번마다 멈추고, 더 나아집니다.</h2><p>최근 10개 매매를 한 사이클로 묶어 잘한 점과 고칠 점을 남겨보세요.</p></div><div class="cycle-ring" id="cycleRing"><strong>0</strong><span>/ 10</span></div></div>
-      <div class="review-list" id="reviewList"></div>
+    <section class="view" id="positionsView">
+      <div class="section-intro"><div><p class="eyebrow">LIVE POSITION MONITOR</p><h2>트레이딩팀 현 포지션</h2><p>전략팀별 보유 포지션과 계획 대비 현재 상태를 확인합니다.</p></div><div class="position-summary"><span><small>총 익스포저</small><b>₩8,420,000</b></span><span><small>미실현 손익</small><b class="positive">+₩418,600</b></span><span><small>리스크 사용률</small><b>34%</b></span></div></div>
+      <div class="team-tabs" data-position-tabs><button class="active" data-team="all">전체 <b>3</b></button><button data-team="scalping">스캘핑팀 <b>0</b></button><button data-team="day">단타팀 <b>1</b></button><button data-team="swing">스윙팀 <b>1</b></button><button data-team="longterm">장기투자팀 <b>1</b></button></div>
+      <div class="positions-grid">
+        <article class="panel position-card" data-team="swing"><header><div><span class="team-tag swing">스윙팀</span><h2>NVDA <small>NASDAQ</small></h2></div><div class="position-side long">LONG</div></header><div class="position-price"><span><small>진입가</small><b>$128.40</b></span><span><small>현재가</small><b>$133.31</b></span><span><small>수량</small><b>20주</b></span><span><small>미실현 손익</small><b class="positive">+$98.20 · +3.82%</b></span></div><div class="position-range"><div><i style="left:25%"></i><i class="current" style="left:61%"></i><i class="target" style="left:88%"></i></div><span>손절 $125.00</span><span>현재 $133.31</span><span>목표 $139.00</span></div><footer><p>실적 모멘텀 + 일봉 돌파 후 지지 확인</p><span>보유 6일 · 리스크 0.8%</span></footer></article>
+        <article class="panel position-card" data-team="day"><header><div><span class="team-tag day">단타팀</span><h2>BTC/USDT <small>BINANCE</small></h2></div><div class="position-side long">LONG</div></header><div class="position-price"><span><small>진입가</small><b>$64,820</b></span><span><small>현재가</small><b>$64,405</b></span><span><small>수량</small><b>0.035 BTC</b></span><span><small>미실현 손익</small><b class="negative">-$14.53 · -0.64%</b></span></div><div class="position-range"><div><i style="left:18%"></i><i class="current" style="left:42%"></i><i class="target" style="left:86%"></i></div><span>손절 $63,900</span><span>현재 $64,405</span><span>목표 $66,100</span></div><footer><p>4시간봉 지지구간 반등, 장중 거래량 회복</p><span>보유 4시간 · 리스크 0.4%</span></footer></article>
+        <article class="panel position-card" data-team="longterm"><header><div><span class="team-tag longterm">장기투자팀</span><h2>MSFT <small>NASDAQ</small></h2></div><div class="position-side long">LONG</div></header><div class="position-price"><span><small>평균단가</small><b>$412.50</b></span><span><small>현재가</small><b>$458.70</b></span><span><small>수량</small><b>10주</b></span><span><small>미실현 손익</small><b class="positive">+$462.00 · +11.20%</b></span></div><div class="position-range"><div><i style="left:12%"></i><i class="current" style="left:66%"></i><i class="target" style="left:91%"></i></div><span>재검토 $390</span><span>현재 $458.70</span><span>목표 $500</span></div><footer><p>클라우드 성장과 현금흐름 기반 장기 보유</p><span>보유 84일 · 비중 7.5%</span></footer></article>
+        <div class="panel empty-position" data-empty-position><span>◉</span><h3>현재 운용 중인 포지션이 없습니다.</h3><p>새 포지션이 연동되면 이곳에 표시됩니다.</p></div>
+      </div>
+    </section>
+
+    <section class="view" id="reportsView">
+      <div class="section-intro"><div><p class="eyebrow">A-GRADE INTELLIGENCE</p><h2>시황 리포트</h2><p>경제·미시 시황팀이 생산한 시장 방향과 종목 수급 분석입니다.</p></div><div class="filter-chips" data-filter-group="report"><button class="active" data-filter="all">전체</button><button data-filter="macro">경제 시황팀</button><button data-filter="micro">미시 시황팀</button></div></div>
+      <article class="featured-report report-item" data-type="macro"><div class="report-visual"><span>DAILY<br>OUTLOOK</span><strong>NEUTRAL+</strong></div><div class="featured-copy"><div class="report-meta"><span class="grade a">A</span><span>경제 시황팀</span><time>2026.08.24 · 08:40</time></div><h2>유동성은 유지되지만, 추격 매수보다 확인이 필요한 구간</h2><p>완화적 금융환경이 위험자산을 지지하고 있으나 장기금리 반등과 달러 강세가 상단을 제한합니다. 주요 지수의 전고점 반응을 확인하며 선택적 대응을 권고합니다.</p><div class="tag-row"><span>#금리</span><span>#달러</span><span>#유동성</span><span>#위험선호</span></div><button class="secondary-btn report-open" data-report="daily">리포트 읽기 →</button></div></article>
+      <div class="report-grid">
+        <article class="panel report-card report-item" data-type="macro"><div class="report-meta"><span class="grade a">A</span><span>금리·통화정책</span><time>07:55</time></div><h3>잭슨홀 이후 금리 경로 시나리오</h3><p>정책금리 기대 변화와 장단기 금리차가 성장주 밸류에이션에 미치는 영향.</p><div class="card-foot"><span>CONFIDENCE 78%</span><button class="text-btn report-open" data-report="rate">OPEN ↗</button></div></article>
+        <article class="panel report-card report-item" data-type="micro"><div class="report-meta"><span class="grade a">A</span><span>기관·외국인 매매</span><time>07:42</time></div><h3>반도체 수급 집중도와 순환매 징후</h3><p>기관 매수 강도는 유지되는 반면 외국인 선물 포지션은 중립으로 전환.</p><div class="card-foot"><span>CONFIDENCE 71%</span><button class="text-btn report-open" data-report="flow">OPEN ↗</button></div></article>
+        <article class="panel report-card report-item" data-type="micro"><div class="report-meta"><span class="grade a">A</span><span>이상 움직임 감지</span><time>07:31</time></div><h3>거래대금 급증 종목 7개 감지</h3><p>20일 평균 대비 거래대금 3배 이상, 가격 변동과 동반된 후보군을 분류했습니다.</p><div class="card-foot"><span>7 SIGNALS</span><button class="text-btn report-open" data-report="anomaly">OPEN ↗</button></div></article>
+        <article class="panel report-card report-item" data-type="macro"><div class="report-meta"><span class="grade a">A</span><span>Bull / Bear</span><time>07:20</time></div><h3>오늘의 강세·약세 논거 대조</h3><p>강세 4개, 약세 3개 근거. 핵심 분기점은 달러 인덱스 102.8입니다.</p><div class="card-foot"><span>BULL 57 : BEAR 43</span><button class="text-btn report-open" data-report="bullbear">OPEN ↗</button></div></article>
+      </div>
+    </section>
+
+    <section class="view" id="researchView">
+      <div class="section-intro"><div><p class="eyebrow">X-GRADE RESEARCH</p><h2>연구 라이브러리</h2><p>전략 검증, 백테스트, 데이터 품질 및 공통 연구 기록입니다.</p></div><button class="primary-btn" id="newResearch">＋ 연구 메모</button></div>
+      <div class="research-layout"><aside class="research-index panel"><div class="search-box compact">⌕ <input id="researchSearch" placeholder="연구 자료 검색" /></div><p class="nav-label">COLLECTIONS</p><button class="collection active" data-research-filter="all"><span>전체 자료</span><b>12</b></button><button class="collection" data-research-filter="backtest"><span>백테스트</span><b>4</b></button><button class="collection" data-research-filter="strategy"><span>전략 연구</span><b>5</b></button><button class="collection" data-research-filter="quality"><span>데이터·검증</span><b>3</b></button><div class="research-health"><span>RESEARCH HEALTH</span><strong>94%</strong><div class="mini-progress"><i style="width:94%"></i></div><small>재현 가능 11 / 12</small></div></aside><div class="research-cards" id="researchCards"></div></div>
+    </section>
+
+    <section class="view" id="organizationView">
+      <div class="section-intro"><div><p class="eyebrow">ORGANIZATION MAP</p><h2>AI 펀드팀 조직도</h2><p>61개 전문 에이전트가 분석·실행·통제의 역할 체계로 운영됩니다.</p></div><div class="org-legend"><span><i class="s"></i>S 지휘</span><span><i class="a"></i>A 분석</span><span><i class="b"></i>B 실행</span><span><i class="x"></i>X 연구</span></div></div>
+      <div class="org-center panel"><span class="grade s">S</span><div><p class="eyebrow">CENTER TEAM · 5 AGENTS</p><h2>센터팀</h2><p>전체 팀 지휘 · 최종 승인 · 포트폴리오 통제</p></div><div class="agent-pills"><span>총괄 오케스트레이터</span><span>CIO·투자위원회</span><span>통합 리스크 매니저</span><span>포트폴리오 배분</span><span>컴플라이언스·감사</span></div></div>
+      <div class="org-connector"><span></span></div><div class="org-grid" id="orgGrid"></div>
+    </section>
+
+    <section class="view" id="tradesView">
+      <div class="team-tabs" data-trade-tabs><button class="active" data-team="all">전체 팀</button><button data-team="scalping">스캘핑팀</button><button data-team="day">단타팀</button><button data-team="swing">스윙팀</button><button data-team="longterm">장기투자팀</button></div>
+      <div class="section-toolbar"><div class="search-box">⌕ <input id="tradeSearch" placeholder="종목 또는 근거 검색" /></div><div class="trade-toolbar-actions"><select id="tradeFilter"><option value="all">전체 결과</option><option value="win">승리</option><option value="loss">패배</option></select><button class="primary-btn" id="openTradeModal">＋ 매매 기록</button></div></div>
+      <div class="trade-grid" id="tradeGrid"></div>
     </section>
 
     <section class="view" id="notesView">
@@ -77,6 +145,7 @@
       <div class="form-grid">
         <label>날짜<input type="date" name="date" required /></label>
         <label>종목<input name="symbol" placeholder="예: BTC/USDT" required /></label>
+        <label>담당 팀<select name="team" required><option value="scalping">스캘핑팀</option><option value="day">단타팀</option><option value="swing">스윙팀</option><option value="longterm">장기투자팀</option></select></label>
         <label>포지션<select name="direction" required><option value="long">롱 (Long)</option><option value="short">숏 (Short)</option></select></label>
         <label>레버리지 배율<input type="number" name="leverage" step="0.1" min="1" placeholder="예: 5" required /></label>
         <label>결과<select name="result" required><option value="win">승리</option><option value="loss">패배</option></select></label>
@@ -91,11 +160,9 @@
     </form>
   </dialog>
 
-  <dialog id="reviewModal"><form id="reviewForm"><div class="modal-head"><div><p class="eyebrow">CYCLE REVIEW</p><h2 id="reviewModalTitle">복기 작성</h2></div><button type="button" class="close-btn" data-review-close>×</button></div><input type="hidden" name="cycle"/><label>잘한 점<textarea name="good" rows="4" placeholder="계속 가져갈 좋은 습관은 무엇인가요?" required></textarea></label><label>고쳐야 할 점<textarea name="improve" rows="4" placeholder="반복된 실수와 다음 사이클의 개선점을 적어보세요." required></textarea></label><label>다음 10회의 핵심 원칙<input name="rule" placeholder="예: 손절가는 진입 전에 정한다" required /></label><div class="modal-actions"><button type="button" class="secondary-btn" data-review-close>취소</button><button class="primary-btn">복기 저장</button></div></form></dialog>
-
   <dialog id="tradeDetailModal"><div class="detail-modal"><div class="modal-head"><div><p class="eyebrow">TRADE DETAIL</p><h2 id="detailTitle">매매 상세</h2></div><button type="button" class="close-btn" data-detail-close>×</button></div><div id="tradeDetailContent"></div><div class="modal-actions"><button class="danger-action" id="detailDelete">삭제</button><button class="primary-btn" id="detailEdit">수정하기</button></div></div></dialog>
 
   <div class="toast" id="toast"></div>
-  <script src="app.js?v=20260820-4"></script>
+  <script src="app.js?v=20260824-4"></script>
 </body>
 </html>
