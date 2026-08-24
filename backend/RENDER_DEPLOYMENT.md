@@ -1,62 +1,34 @@
-# Render deployment readiness
+# Render public demo mode
 
-This repository is not currently safe or network-compatible for a public Render Web
-Service. The HTTP runtime deliberately accepts only `localhost` or `127.0.0.1`, and
-its API has no authentication. Do not deploy it publicly and do not change the host
-to `0.0.0.0` merely to make a Render health check pass.
+This runtime is a deterministic simulation only. No deployment was performed by this
+change. Public binding is fail-closed and requires both an explicit mode flag and a
+secret bearer token; localhost remains the default.
 
-No Render deployment was performed as part of this preparation.
+## Render Web Service settings
 
-## Runtime and dependencies
-
-The application runtime uses only the Python standard library. There is no runtime
-dependency installation step and no `requirements.txt` is needed. Use Python 3.10 or
-newer (Python 3.11 is suitable on Render).
-
-After a safe authentication and public-bind design has been implemented and reviewed,
-configure a Render Web Service with:
-
-- **Root Directory:** the directory containing this file
-- **Build Command:** `true` (no package installation is required)
-- **Start Command:** `PYTHONPATH=src python -m local_runtime --host 127.0.0.1 --port "$PORT" --state-dir "$LOCAL_RUNTIME_STATE_DIR"`
+- **Root Directory:** this backend directory
+- **Build Command:** `true`
+- **Start Command:** `PYTHONPATH=src python -m local_runtime --host 0.0.0.0 --port "$PORT" --state-dir "$LOCAL_RUNTIME_STATE_DIR"`
 - **Health Check Path:** `/health`
 
-This command records the current host policy accurately, but a Render proxy cannot
-reach a process bound to loopback. It is a readiness reference, not a deployable
-public-service configuration. A future public deployment must first add authentication
-and a deliberately reviewed external bind policy; only then should its start command
-use that new safe policy.
+Configure these environment variables in Render's secret/environment UI:
 
-## Environment variables
+| Variable | Value/guidance |
+| --- | --- |
+| `LOCAL_RUNTIME_PUBLIC_MODE` | Exactly `1` |
+| `LOCAL_RUNTIME_AUTH_TOKEN` | A strong, non-empty secret; never commit it |
+| `LOCAL_RUNTIME_ALLOWED_ORIGINS` | Comma-separated exact trusted UI origins; wildcards are rejected |
+| `LOCAL_RUNTIME_STATE_DIR` | `/tmp/local-runtime` for safe ephemeral state, or an attached disk path such as `/var/data/local-runtime` |
 
-| Variable | Purpose | Render guidance |
-| --- | --- | --- |
-| `LOCAL_RUNTIME_HOST` | Bind host | Keep `127.0.0.1` under the current policy. `0.0.0.0` is rejected. |
-| `LOCAL_RUNTIME_PORT` | Listening port | Locally defaults to `8765`. On Render, prefer injected `PORT` in the command line above. |
-| `LOCAL_RUNTIME_STATE_DIR` | Runtime state and audit files | Set to a disk path such as `/var/data/local-runtime`; otherwise state is ephemeral. |
-| `LOCAL_RUNTIME_ALLOWED_ORIGINS` | Comma-separated exact CORS origins | Set only trusted `https://` UI origins; no wildcards or paths. CORS is not authentication. |
-
+Render supplies `PORT`; the runtime also uses it automatically when
+`LOCAL_RUNTIME_PORT` is absent. `LOCAL_RUNTIME_PORT` may explicitly override it.
 `LOCAL_RUNTIME_INTERVAL_SECONDS` is optional and defaults to `1.0`.
 
-The health endpoint is `GET /health`; a healthy local response is HTTP 200 with
-`{"ok": true, "scope": "localhost-demo-only"}`. Its scope is an additional reminder
-that the current server is not intended for public traffic.
+`GET /health` and all `OPTIONS` requests are unauthenticated. Every other endpoint
+requires `Authorization: Bearer <LOCAL_RUNTIME_AUTH_TOKEN>`. CORS remains an exact
+allowlist and is not authentication. Missing public mode or a blank/missing token makes
+`0.0.0.0` startup fail. Enabling public mode with no token also fails even on loopback.
 
-## Persistent disk warning
-
-Render's normal filesystem is ephemeral. To retain state across restarts or deploys,
-attach a persistent disk and point `LOCAL_RUNTIME_STATE_DIR` at its mount path. A disk
-is tied to one service instance and constrains scaling/failover; this file-backed
-runtime is not designed for multiple instances writing the same logical state.
-Backups and retention remain the operator's responsibility.
-
-## Required work before public deployment
-
-1. Add and test authentication for every non-health endpoint, with authorization for
-   state-changing routes.
-2. Add an explicit, reviewed production bind mode instead of weakening localhost
-   validation. Default behavior must remain loopback-only.
-3. Add proxy-aware transport/security handling, request limits, secret management,
-   and production logging as appropriate.
-4. Re-run tests and verify `/health` through Render's proxy in a non-public environment
-   before enabling public access.
+Render's normal filesystem is ephemeral. A persistent disk is tied to one instance;
+this file-backed runtime is not designed for multiple writers. Backups and retention
+remain the operator's responsibility.

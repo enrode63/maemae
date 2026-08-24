@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -12,7 +13,7 @@ from .runtime import LocalRuntime, RuntimeConfig
 
 
 LOCAL_ALLOWED_ORIGINS = frozenset({"http://localhost", "http://127.0.0.1", "http://localhost:3000", "http://127.0.0.1:3000"})
-BIND_HOSTS = ("localhost", "127.0.0.1")
+BIND_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0")
 ENV_PREFIX = "LOCAL_RUNTIME_"
 
 
@@ -42,11 +43,28 @@ def port_number(value: str) -> int:
 
 def bind_host(value: str) -> str:
     if value not in BIND_HOSTS:
-        raise argparse.ArgumentTypeError("host must be localhost or 127.0.0.1")
+        raise argparse.ArgumentTypeError("host must be localhost, 127.0.0.1, or 0.0.0.0")
+    if value == "0.0.0.0":
+        public_mode = os.getenv(f"{ENV_PREFIX}PUBLIC_MODE") == "1"
+        token = os.getenv(f"{ENV_PREFIX}AUTH_TOKEN", "")
+        if not public_mode or not token.strip():
+            raise argparse.ArgumentTypeError(
+                "0.0.0.0 requires LOCAL_RUNTIME_PUBLIC_MODE=1 and a non-empty LOCAL_RUNTIME_AUTH_TOKEN")
     return value
 
 
-def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_ALLOWED_ORIGINS):
+def public_auth_token() -> str | None:
+    """Return the public-mode token, failing closed when public mode is incomplete."""
+    if os.getenv(f"{ENV_PREFIX}PUBLIC_MODE") != "1":
+        return None
+    token = os.getenv(f"{ENV_PREFIX}AUTH_TOKEN", "")
+    if not token.strip():
+        raise ValueError("LOCAL_RUNTIME_PUBLIC_MODE=1 requires a non-empty LOCAL_RUNTIME_AUTH_TOKEN")
+    return token
+
+
+def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_ALLOWED_ORIGINS,
+                 auth_token: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         def _cors(self) -> None:
             origin = self.headers.get("Origin")
@@ -72,11 +90,24 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                 raise ValueError("JSON object required")
             return value
 
+        def _authorized(self) -> bool:
+            if auth_token is None:
+                return True
+            supplied = self.headers.get("Authorization", "")
+            expected = f"Bearer {auth_token}"
+            return hmac.compare_digest(supplied.encode(), expected.encode())
+
+        def _require_authorization(self) -> bool:
+            if self._authorized():
+                return True
+            self._send(401, {"error": "unauthorized"})
+            return False
+
         def do_OPTIONS(self):
             self.send_response(204)
             self._cors()
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
             self.end_headers()
 
         def do_GET(self):
@@ -87,9 +118,13 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                       "/events": runtime.event_list}
             if path not in routes:
                 return self._send(404, {"error": "not_found"})
+            if path != "/health" and not self._require_authorization():
+                return
             self._send(200, routes[path]())
 
         def do_POST(self):
+            if not self._require_authorization():
+                return
             try:
                 body, path = self._body(), urlparse(self.path).path
                 if path == "/chat/conversations":
@@ -117,10 +152,11 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="localhost-only deterministic demo runtime")
+    parser = argparse.ArgumentParser(description="safe local/public deterministic demo runtime")
     parser.add_argument("--host", choices=BIND_HOSTS, type=bind_host,
                         default=os.getenv(f"{ENV_PREFIX}HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=port_number, default=os.getenv(f"{ENV_PREFIX}PORT", "8765"))
+    parser.add_argument("--port", type=port_number,
+                        default=os.getenv(f"{ENV_PREFIX}PORT", os.getenv("PORT", "8765")))
     parser.add_argument("--state-dir", type=Path, default=os.getenv(f"{ENV_PREFIX}STATE_DIR", "local-state"))
     parser.add_argument("--interval-seconds", type=float, default=os.getenv(f"{ENV_PREFIX}INTERVAL_SECONDS", "1.0"))
     return parser
@@ -133,8 +169,13 @@ def main() -> None:
         allowed_origins = parse_allowed_origins(os.getenv(f"{ENV_PREFIX}ALLOWED_ORIGINS"))
     except ValueError as exc:
         parser.error(str(exc))
+    try:
+        auth_token = public_auth_token()
+    except ValueError as exc:
+        parser.error(str(exc))
     runtime = LocalRuntime(args.state_dir, RuntimeConfig(interval_seconds=args.interval_seconds))
-    ThreadingHTTPServer((args.host, args.port), make_handler(runtime, allowed_origins)).serve_forever()
+    ThreadingHTTPServer((args.host, args.port),
+                        make_handler(runtime, allowed_origins, auth_token)).serve_forever()
 
 
 if __name__ == "__main__":

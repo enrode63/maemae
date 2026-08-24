@@ -1,9 +1,7 @@
 # Demo Trading Backend
 
-Render deployment readiness and security constraints are documented in
-[`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md). The current HTTP runtime is
-localhost-only and must not be exposed publicly without authentication and an
-explicitly reviewed bind policy.
+The localhost-safe runtime and explicitly gated Render public demo mode are documented
+in [`LOCAL_RUNTIME.md`](LOCAL_RUNTIME.md) and [`RENDER_DEPLOYMENT.md`](RENDER_DEPLOYMENT.md).
 
 외부 API나 자격 증명 없이 `JSON 신호 → 리스크 검사 → PM 승인 → 가상 체결 → 포지션/손익 → append-only 이벤트 로그`를 실행합니다. 유일한 실행 모드는 `simulation`이며 실거래 기능은 없습니다. 금액은 입력 통화 단위, 수량은 주, 수수료율은 소수 비율, 슬리피지는 bp입니다.
 

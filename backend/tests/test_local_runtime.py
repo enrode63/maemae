@@ -8,7 +8,8 @@ import threading
 import unittest
 from unittest import mock
 
-from local_runtime.api import LOCAL_ALLOWED_ORIGINS, build_parser, make_handler, parse_allowed_origins
+from local_runtime.api import (LOCAL_ALLOWED_ORIGINS, build_parser, make_handler,
+                               parse_allowed_origins, public_auth_token)
 from local_runtime.runtime import LocalRuntime, RuntimeConfig
 from local_runtime.ticks import DeterministicTickSource
 from http.server import ThreadingHTTPServer
@@ -21,6 +22,34 @@ class TickAndWorkerTests(unittest.TestCase):
             parser.parse_args(["--host", "::1"])
         self.assertEqual(parser.parse_args(["--host", "localhost"]).host, "localhost")
         self.assertEqual(parser.parse_args(["--host", "127.0.0.1"]).host, "127.0.0.1")
+
+    def test_public_bind_requires_explicit_mode_and_token(self):
+        for environ in ({}, {"LOCAL_RUNTIME_PUBLIC_MODE": "1"},
+                        {"LOCAL_RUNTIME_AUTH_TOKEN": "secret"},
+                        {"LOCAL_RUNTIME_PUBLIC_MODE": "true", "LOCAL_RUNTIME_AUTH_TOKEN": "secret"}):
+            with self.subTest(environ=environ), mock.patch.dict(os.environ, environ, clear=True):
+                with self.assertRaises(SystemExit):
+                    build_parser().parse_args(["--host", "0.0.0.0"])
+        with mock.patch.dict(os.environ, {"LOCAL_RUNTIME_PUBLIC_MODE": "1",
+                                          "LOCAL_RUNTIME_AUTH_TOKEN": "secret"}, clear=True):
+            self.assertEqual(build_parser().parse_args(["--host", "0.0.0.0"]).host, "0.0.0.0")
+
+    def test_public_mode_itself_fails_closed_without_token(self):
+        with mock.patch.dict(os.environ, {"LOCAL_RUNTIME_PUBLIC_MODE": "1"}, clear=True):
+            with self.assertRaisesRegex(ValueError, "non-empty"):
+                public_auth_token()
+        with mock.patch.dict(os.environ, {"LOCAL_RUNTIME_PUBLIC_MODE": "1",
+                                          "LOCAL_RUNTIME_AUTH_TOKEN": "secret"}, clear=True):
+            self.assertEqual(public_auth_token(), "secret")
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(public_auth_token())
+
+    def test_render_port_is_used_without_local_override(self):
+        with mock.patch.dict(os.environ, {"PORT": "10000"}, clear=True):
+            self.assertEqual(build_parser().parse_args([]).port, 10000)
+        with mock.patch.dict(os.environ, {"PORT": "10000",
+                                          "LOCAL_RUNTIME_PORT": "9876"}, clear=True):
+            self.assertEqual(build_parser().parse_args([]).port, 9876)
 
     def test_environment_defaults_keep_loopback_and_cli_can_override(self):
         environ = {"LOCAL_RUNTIME_HOST": "localhost", "LOCAL_RUNTIME_PORT": "9876",
@@ -174,6 +203,53 @@ class ApiTests(unittest.TestCase):
         completed = next(e for e in self.runtime.chat.audit.read()
                          if e["event_type"] == "chat_completed")
         self.assertEqual(completed["payload"]["metadata"], context["metadata"])
+
+
+class PublicApiTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.runtime = LocalRuntime(Path(self.temp.name))
+        origins = parse_allowed_origins("https://trading-ui.vercel.app")
+        self.server = ThreadingHTTPServer(
+            ("127.0.0.1", 0), make_handler(self.runtime, origins, "public-secret"))
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.temp.cleanup()
+
+    def request(self, method, path, body=None, origin=None, token=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port)
+        headers = {"Content-Type": "application/json"}
+        if origin:
+            headers["Origin"] = origin
+        if token is not None:
+            headers["Authorization"] = f"Bearer {token}"
+        conn.request(method, path, json.dumps(body).encode() if body is not None else None, headers)
+        response = conn.getresponse()
+        value = json.loads(response.read() or b"{}")
+        response_headers = dict(response.getheaders())
+        conn.close()
+        return response.status, value, response_headers
+
+    def test_public_health_is_open_but_chat_requires_bearer_token(self):
+        self.assertEqual(self.request("GET", "/health")[0], 200)
+        self.assertEqual(self.request("POST", "/chat/conversations", {})[0], 401)
+        self.assertEqual(self.request("POST", "/chat/conversations", {}, token="wrong")[0], 401)
+        status, value, _ = self.request("POST", "/chat/conversations",
+                                        {"conversation_id": "authorized"}, token="public-secret")
+        self.assertEqual((status, value["conversation_id"]), (200, "authorized"))
+
+    def test_public_cors_remains_exact_and_options_is_open(self):
+        status, _, headers = self.request("OPTIONS", "/chat/send",
+                                          origin="https://trading-ui.vercel.app")
+        self.assertEqual(status, 204)
+        self.assertEqual(headers["Access-Control-Allow-Origin"], "https://trading-ui.vercel.app")
+        self.assertIn("Authorization", headers["Access-Control-Allow-Headers"])
+        _, _, denied = self.request("GET", "/health", origin="https://evil.example")
+        self.assertNotIn("Access-Control-Allow-Origin", denied)
 
 
 if __name__ == "__main__":

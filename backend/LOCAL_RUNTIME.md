@@ -1,8 +1,8 @@
 # Local demo runtime
 
 This service is a deterministic simulation only. It contains no exchange, broker,
-LLM, credential, real-money, deposit, or withdrawal integration. The server CLI
-accepts only loopback bind targets.
+LLM, credential, real-money, deposit, or withdrawal integration. The server defaults
+to loopback and state beneath `local-state`.
 
 Run from `backend` with Python 3.10+:
 
@@ -29,7 +29,14 @@ python -m local_runtime
 `https://` origins. An origin is scheme + host + optional port, with no path. Wildcards,
 userinfo, query strings, and fragments are rejected. The four built-in development origins
 (`localhost` and `127.0.0.1`, with no port or port 3000) remain available. No origin is
-inferred from a request. The bind host cannot be widened by either CLI or environment.
+inferred from a request.
+
+The bind host can be widened to `0.0.0.0` only when
+`LOCAL_RUNTIME_PUBLIC_MODE=1` and a non-empty `LOCAL_RUNTIME_AUTH_TOKEN` are both set.
+Public mode rejects startup without the token. In public mode, `/health` and `OPTIONS`
+are open; every other endpoint requires `Authorization: Bearer <token>`. Store the
+token only in environment/secret configuration. CORS remains an exact allowlist and
+never accepts a wildcard.
 
 `--interval-seconds 60` gives a one-minute cycle; fractional values are useful in
 tests. State and audit events are appended beneath `local-state`. A restart never
@@ -64,8 +71,8 @@ not aliases. Responses echo the effective context, which is also retained in aud
 Set the frontend's API base URL to the operator-provided runtime URL, without a trailing
 slash. A Vercel page origin must also appear exactly in
 `LOCAL_RUNTIME_ALLOWED_ORIGINS`. A hosted browser cannot reach another machine's
-`127.0.0.1`; exposing or deploying this backend is intentionally outside this project.
-There is no authentication layer, so do not publish it to the internet.
+`127.0.0.1`; use the explicitly gated public demo mode described in
+`RENDER_DEPLOYMENT.md` for a hosted UI.
 
 All successful responses below are JSON with HTTP 200. Errors use
 `{"error":"<type>","message":"<detail>"}` (400) or `{"error":"not_found"}` (404).
