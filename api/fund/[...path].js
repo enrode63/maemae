@@ -42,8 +42,8 @@ function configuredOrigin() {
 }
 
 function requestedPath(request) {
-  let value = request.query && request.query.path;
-  if (value === undefined && typeof request.url === 'string') {
+  let value;
+  if (typeof request.url === 'string') {
     try {
       const pathname = new URL(request.url, 'http://localhost').pathname;
       const prefix = '/api/fund/';
@@ -52,6 +52,7 @@ function requestedPath(request) {
       return null;
     }
   }
+  if (value === undefined) value = request.query && request.query.path;
   const parts = Array.isArray(value)
     ? value
     : typeof value === 'string'
