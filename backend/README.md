@@ -33,6 +33,16 @@ python -m unittest discover -s tests -v
 `pytest`가 설치된 환경에서는 `pytest` 명령도 그대로 사용할 수 있습니다.
 # Automated research and paper-trading API
 
+Ensemble decision endpoints are additive to the existing reporting contract:
+
+- `GET /automation/team-configs` returns each team's timeframe, threshold, and signal weights.
+- `POST /automation/score` previews the shared 0-100 score without recording an order.
+- `POST /automation/decisions` records a simulation-only `PAPER_TRADE` or `NO_TRADE` decision.
+- `GET /automation/decisions?team=day` and `GET /automation/scores?team=day` query saved decisions.
+
+Missing/invalid signals and unconfigured market providers always produce `NO_TRADE`.
+Delayed or free data is explicitly labelled, and there is no live-order route.
+
 The local runtime also exposes a fail-closed automation foundation. It has no
 broker adapter or live-order endpoint. `mode` is always `simulation`.
 

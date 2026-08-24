@@ -81,7 +81,7 @@ class AutomationTests(unittest.TestCase):
             service.record_trade({**base, "symbol": "NOTREAL", "rationale": "x" * 60})
 
         report = service.reports("all")
-        self.assertEqual(set(report), {"kpis", "teams", "assetAllocation", "weekly", "sentiment", "updatedAt"})
+        self.assertEqual(set(report), {"kpis", "teams", "assetAllocation", "weekly", "sentiment", "ensemble", "updatedAt"})
         self.assertEqual(report["kpis"]["cumulativePnl"], 5.0)
 
     def test_reporting_services_reject_invalid_team_and_accept_overall_scope(self):

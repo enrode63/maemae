@@ -114,6 +114,10 @@
       <div id="tradingReportState" class="report-state panel" role="status" aria-live="polite"><span class="state-spinner" aria-hidden="true"></span><div><b>Trading Reports를 불러오는 중입니다.</b><p>성과 API 연결 상태를 확인하고 있습니다.</p></div></div>
       <div id="tradingReportContent" hidden>
         <section class="report-kpis" id="reportKpis" aria-label="핵심 성과 지표"></section>
+        <section class="panel report-block ensemble-block" aria-labelledby="ensembleTitle">
+          <div class="report-block-head"><div><p class="eyebrow">ENSEMBLE SIGNALS</p><h3 id="ensembleTitle">팀별 앙상블 점수</h3></div><span id="ensembleUpdated">읽기 전용</span></div>
+          <div id="ensembleSignals" class="ensemble-signals" aria-live="polite"></div>
+        </section>
         <div class="trading-report-layout">
           <section class="panel report-block report-weekly"><div class="report-block-head"><div><p class="eyebrow">WEEKLY REVIEW</p><h3>주간 성과와 회고</h3></div><span id="reportWeek">—</span></div><div id="weeklyPerformance"></div></section>
           <section class="panel report-block"><div class="report-block-head"><div><p class="eyebrow">ALLOCATION</p><h3>자산 배분</h3></div><span id="allocationTotal">—</span></div><div id="assetAllocation" class="allocation-list"></div></section>

@@ -119,6 +119,9 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                       "/events": runtime.event_list,
                       "/automation/status": runtime.automation.status,
                       "/automation/universe": runtime.automation.universe,
+                      "/automation/team-configs": runtime.automation.team_configs,
+                      "/automation/scores": lambda: runtime.automation.decisions(parse_qs(parsed.query).get("team", [None])[0]),
+                      "/automation/decisions": lambda: runtime.automation.decisions(parse_qs(parsed.query).get("team", [None])[0]),
                       "/automation/reports": lambda: runtime.automation.reports(parse_qs(parsed.query).get("team", [None])[0]),
                       "/automation/weekly-evaluations": runtime.automation.evaluations,
                       "/automation/performance": lambda: runtime.automation.performance(parse_qs(parsed.query).get("team", [None])[0])}
@@ -153,6 +156,10 @@ def make_handler(runtime: LocalRuntime, allowed_origins: frozenset[str] = LOCAL_
                     value = runtime.automation.run_due()
                 elif path == "/automation/paper-trades":
                     value = runtime.automation.record_trade(body)
+                elif path == "/automation/score":
+                    value = runtime.automation.score(body.get("team", ""), body.get("signals"))
+                elif path == "/automation/decisions":
+                    value = runtime.automation.decide(body)
                 elif path == "/automation/weekly-evaluation":
                     value = runtime.automation.weekly_evaluation(body["team"], body["week"], body.get("strengths", []), body.get("improvements", []))
                 else:

@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from .providers import ProviderUnavailable, UnconfiguredProvider, provider_status
 from .schedule import schedule_state
+from .scoring import TEAM_SCORE_CONFIGS, score_signals
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ class AutomationService:
         self.reporter = report_provider or UnconfiguredProvider("llm_report")
         self.config = config or AutomationConfig()
         self._lock = RLock()
-        self._state = {"completed_jobs": {}, "reports": [], "trades": [], "evaluations": []}
+        self._state = {"completed_jobs": {}, "reports": [], "trades": [], "evaluations": [], "decisions": []}
         if self.path.exists():
             self._state.update(json.loads(self.path.read_text(encoding="utf-8")))
 
@@ -55,6 +56,55 @@ class AutomationService:
                 "providers": {"market_data": provider_status(self.market, "market_data"),
                               "llm_report": provider_status(self.reporter, "llm_report")},
                 "schedule": schedule_state(now), "rationale_min_length": self.config.rationale_min_length}
+
+    def team_configs(self) -> dict[str, dict[str, Any]]:
+        return {team: config.json() for team, config in TEAM_SCORE_CONFIGS.items()}
+
+    def score(self, team: str, signals: object) -> dict[str, Any]:
+        return {"team": team, "mode": "simulation", "live_ordering": False,
+                **score_signals(team, signals)}
+
+    def decide(self, raw: dict[str, Any]) -> dict[str, Any]:
+        """Persist paper eligibility only; this method has no order/fill adapter."""
+        team = str(raw.get("team", ""))
+        if team not in TRADING_TEAMS:
+            raise ValueError("invalid team")
+        symbol = str(raw.get("symbol", "")).upper().strip()
+        if not symbol:
+            raise ValueError("symbol is required")
+        configured = provider_status(self.market, "market_data")["configured"]
+        universe = self.universe()
+        allowed_symbols = set(universe["us_equities"]) | set(universe["crypto"])
+        if symbol not in allowed_symbols:
+            raise ValueError("symbol is outside the S&P500, Nasdaq100, BTC/ETH universe")
+        result = score_signals(team, raw.get("signals") if configured else None)
+        quality = str(raw.get("data_quality", "realtime")).lower()
+        if quality not in {"realtime", "delayed", "free"}:
+            result.update(decision="NO_TRADE", score=0.0)
+            result["missing_signals"] = sorted(set(result["missing_signals"] + ["valid_data_quality"]))
+        if not configured:
+            result["decision"] = "NO_TRADE"
+            result["missing_signals"] = sorted(set(result["missing_signals"] + ["market_data_provider"]))
+        rationale = str(raw.get("rationale", "")).strip()
+        if not rationale:
+            state = "met" if result["decision"] == "PAPER_TRADE" else "did not meet"
+            rationale = (f"The {team} ensemble score {state} its configured threshold; the decision uses "
+                         f"{quality} market data and remains simulation-only with no live order route.")
+        if len(rationale) < self.config.rationale_min_length:
+            raise ValueError(f"decision rationale must be at least {self.config.rationale_min_length} characters")
+        decision = {"id": uuid4().hex, "symbol": symbol, "team": team, "mode": "simulation",
+                    "live_ordering": False, "data_quality": quality, **result, "rationale": rationale,
+                    "created_at": str(raw.get("created_at") or datetime.now(timezone.utc).isoformat())}
+        with self._lock:
+            self._state["decisions"].append(decision)
+            self._save()
+        return decision
+
+    def decisions(self, team: str | None = None) -> list[dict[str, Any]]:
+        selected = normalize_team(team)
+        with self._lock:
+            return [dict(item) for item in self._state["decisions"]
+                    if selected is None or item["team"] == selected]
 
     def universe(self) -> dict[str, Any]:
         if not provider_status(self.market, "market_data")["configured"]:
@@ -112,6 +162,29 @@ class AutomationService:
                 teams.append({"team": name, "teamName": name, "title": "주간 리포트",
                               "returnRate": float(item["return_pct"]),
                               "summary": f"{item['trade_count']} paper trades recorded."})
+            ensemble_teams = []
+            if provider_status(self.market, "market_data")["configured"]:
+                latest_decisions: dict[str, dict[str, Any]] = {}
+                for decision in reversed(self._state["decisions"]):
+                    decision_team = decision.get("team")
+                    if (selected is None or decision_team == selected) and decision_team not in latest_decisions:
+                        latest_decisions[decision_team] = decision
+                for name in report_teams:
+                    decision = latest_decisions.get(name)
+                    if decision is None:
+                        continue
+                    ensemble_teams.append({
+                        key: decision[key] for key in (
+                            "id", "symbol", "team", "score", "decision", "threshold", "timeframe",
+                            "signal_breakdown", "rationale", "missing_signals", "created_at",
+                        ) if key in decision
+                    })
+                    ensemble_teams[-1]["status"] = (
+                        "delayed" if decision.get("data_quality") == "delayed" else "ready"
+                    )
+            ensemble_updated_at = max(
+                (item.get("created_at", "") for item in ensemble_teams), default=""
+            ) or None
             return {"kpis": {"cumulativePnl": float(performance["pnl"]),
                               "averageRr": float(performance["rr"]) if performance["rr"] is not None else None,
                               "positions": sum(Decimal(value) != 0 for value in performance["positions"].values()),
@@ -123,6 +196,7 @@ class AutomationService:
                                "wins": latest.get("strengths", []),
                                "improvements": latest.get("improvements", [])},
                     "sentiment": {"crypto": {}, "usStocks": {}},
+                    "ensemble": {"updatedAt": ensemble_updated_at, "teams": ensemble_teams},
                     "updatedAt": datetime.now(timezone.utc).isoformat()}
 
     def record_trade(self, raw: dict[str, Any]) -> dict[str, Any]:

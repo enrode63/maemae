@@ -10,3 +10,4 @@
 - Responsive behavior: five KPI cards collapse to three columns below 1050px and one column below 720px. Weekly review, team reports, allocation, and sentiment cards stack on mobile. Horizontal team tabs remain scrollable.
 - Data integrity: no sample trading data is rendered. `/api/trading-reports?team={all|scalping|day|swing|longterm}` is treated as read-only; missing or failed responses resolve to an empty/error state.
 - Trading safety: this surface is reporting-only and must not expose order entry, execution, approval, or position mutation controls.
+- Ensemble signals: team score (0–100), BUY/SELL/NO_TRADE label, threshold, timeframe, breakdown and rationale are read-only. Missing providers resolve to a labeled `PROVIDER 미설정` / `NO_TRADE` state; delayed and error states never fabricate scores.

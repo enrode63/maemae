@@ -193,6 +193,21 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(value, {"error": "ValueError", "message": "invalid team"})
         self.assertEqual(headers["Content-Type"], "application/json; charset=utf-8")
 
+    def test_ensemble_config_score_and_decision_api_are_additive_and_safe(self):
+        status, configs, _ = self.request("GET", "/automation/team-configs")
+        self.assertEqual(status, 200)
+        self.assertEqual(set(configs), {"scalping", "day", "swing", "longterm"})
+        weights = configs["day"]["weights"]
+        status, score, _ = self.request("POST", "/automation/score", {
+            "team": "day", "signals": {name: 90 for name in weights}})
+        self.assertEqual((status, score["score"], score["decision"]), (200, 90.0, "PAPER_TRADE"))
+        status, decision, _ = self.request("POST", "/automation/decisions", {
+            "team": "day", "symbol": "BTC", "signals": {name: 90 for name in weights}})
+        self.assertEqual((status, decision["decision"], decision["live_ordering"]),
+                         (200, "NO_TRADE", False))
+        self.assertEqual(self.request("GET", "/automation/decisions?team=day")[1], [decision])
+        self.assertEqual(self.request("GET", "/automation/scores?team=day")[1], [decision])
+
     def test_chat_metadata_roundtrip_and_content_contract(self):
         context = {"role": "Risk", "team": "alpha",
                    "metadata": {"channel": "desk-chat", "team_label": "Alpha Desk"}}
