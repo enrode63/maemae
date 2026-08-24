@@ -124,7 +124,7 @@ function chatApiToken(){const candidate=window.EDGE_FUND_API_TOKEN??localStorage
 function chatApiAllowlist(){const configured=window.EDGE_FUND_API_ALLOWLIST;if(Array.isArray(configured))return configured;if(typeof configured==='string')return configured.split(',').map(value=>value.trim()).filter(Boolean);return []}
 function normalizeChatApiBase(candidate){const value=String(candidate||CHAT_API_DEFAULT).trim();if(value==='/api/fund')return value;try{const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.search||url.hash)return null;const isLocal=['localhost','127.0.0.1','::1'].includes(url.hostname);const allowed=chatApiAllowlist().some(entry=>{try{return new URL(entry).origin===url.origin}catch{return false}});return isLocal||allowed?url.origin:null}catch{return null}}
 const CHAT_API_TOKEN=chatApiToken();
-const configuredChatApiBase=window.EDGE_FUND_API_BASE||chatQuery.get('apiBase')||localStorage.getItem(CHAT_API_BASE_KEY)||CHAT_API_DEFAULT;
+const configuredChatApiBase=location.hostname.endsWith('.vercel.app')?window.EDGE_FUND_API_BASE||CHAT_API_DEFAULT:window.EDGE_FUND_API_BASE||chatQuery.get('apiBase')||localStorage.getItem(CHAT_API_BASE_KEY)||CHAT_API_DEFAULT;
 const requestedChatApiBase=configuredChatApiBase;
 const CHAT_API_BASE=normalizeChatApiBase(requestedChatApiBase)||CHAT_API_DEFAULT;
 if(String(requestedChatApiBase)!==CHAT_API_DEFAULT&&CHAT_API_BASE===CHAT_API_DEFAULT)console.warn('Blocked unsafe Fund API base URL. Add its origin to EDGE_FUND_API_ALLOWLIST to allow it.');
