@@ -15,6 +15,7 @@ from fund_chat.audit import AuditLog
 
 from .ticks import DeterministicTickSource
 from trading_automation import AutomationService
+from trading_automation.providers import market_provider_from_env
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ class LocalRuntime:
         self.config = config or RuntimeConfig()
         self.events = AuditLog(self.state_dir / "runtime-events.jsonl")
         self.chat = ChatOrchestrator(self.state_dir / "chat-events.jsonl", self._apply_proposal)
-        self.automation = AutomationService(self.state_dir)
+        self.automation = AutomationService(self.state_dir, market_provider_from_env())
         self.ticks = DeterministicTickSource(self.config.seed, self.config.symbol, self.config.start_price)
         self.engine = SimulationEngine({self.config.symbol: self.config.start_price}, risk_config, self.state_dir / "engine")
         self.status = "idle"

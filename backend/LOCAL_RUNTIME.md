@@ -25,6 +25,14 @@ $env:LOCAL_RUNTIME_ALLOWED_ORIGINS = "https://my-ui.vercel.app"
 python -m local_runtime
 ```
 
+Market data is fail-closed by default. To opt in to the keyless, read-only EOD adapter,
+set `MARKET_DATA_PROVIDER=free_eod`. It reads S&P 500/Nasdaq-100 constituents from
+Wikipedia and daily price/volume history from Yahoo's public chart endpoint, including
+BTC-USD and ETH-USD. This unofficial free data can be delayed, unavailable, or rate
+limited. It is labelled `free`, so scheduled analysis and reports may be generated but
+the automation contract records `NO_TRADE` and never creates a paper trade from it.
+Missing, stale, malformed, or partial responses fail closed. No broker/order API exists.
+
 `LOCAL_RUNTIME_ALLOWED_ORIGINS` is a comma-separated list of exact `http://` or
 `https://` origins. An origin is scheme + host + optional port, with no path. Wildcards,
 userinfo, query strings, and fragments are rejected. The four built-in development origins

@@ -105,6 +105,16 @@ class AutomationTests(unittest.TestCase):
         self.assertTrue(service.decisions())
         self.assertEqual({item["decision"] for item in service.decisions()}, {"NO_TRADE"})
 
+    def test_direct_free_data_decision_fails_closed_even_with_high_signals(self):
+        service = AutomationService(Path(self.temp.name), FakeMarket())
+        signals = {name: 100 for name in TEAM_SCORE_CONFIGS["day"].weights}
+        decision = service.decide({"symbol": "AAPL", "team": "day", "signals": signals,
+                                   "data_quality": "free"})
+        self.assertEqual(decision["decision"], "NO_TRADE")
+        self.assertIn("realtime_data", decision["missing_signals"])
+        report_team = service.reports("day")["ensemble"]["teams"][0]
+        self.assertEqual(report_team["status"], "free")
+
     def test_market_snapshot_still_drives_ledger_without_report_provider(self):
         service = AutomationService(Path(self.temp.name), ScoredMarket())
         result = service.run_due(datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc))
@@ -162,6 +172,18 @@ class AutomationTests(unittest.TestCase):
         result = service.run_due(datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc))
         self.assertEqual({job["state"] for job in result["jobs"]}, {"provider_error"})
         self.assertNotIn("secret", str(result))
+
+    def test_configured_but_unavailable_provider_is_distinct_and_fail_closed(self):
+        class UnavailableMarket(FakeMarket):
+            def snapshot(self, symbols):
+                from trading_automation.providers import ProviderUnavailable
+                raise ProviderUnavailable("free feed is stale")
+
+        service = AutomationService(Path(self.temp.name), UnavailableMarket(), FakeReporter())
+        result = service.run_due(datetime(2026, 7, 7, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual({job["state"] for job in result["jobs"]}, {"provider_unavailable"})
+        self.assertEqual({job["decision"] for job in result["jobs"]}, {"NO_TRADE"})
+        self.assertEqual(service.trades(), [])
 
 
 if __name__ == "__main__":

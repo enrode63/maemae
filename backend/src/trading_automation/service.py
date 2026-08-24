@@ -82,6 +82,9 @@ class AutomationService:
         if quality not in {"realtime", "delayed", "free"}:
             result["decision"] = "NO_TRADE"
             result["missing_signals"] = sorted(set(result["missing_signals"] + ["valid_data_quality"]))
+        if quality == "free":
+            result["decision"] = "NO_TRADE"
+            result["missing_signals"] = sorted(set(result["missing_signals"] + ["realtime_data"]))
         if not configured:
             result["decision"] = "NO_TRADE"
             result["missing_signals"] = sorted(set(result["missing_signals"] + ["market_data_provider"]))
@@ -152,7 +155,9 @@ class AutomationService:
                     results.append({"market": market, "state": "generated", "report_id": report["id"],
                                     "decisions": len(cycle_decisions), "trades": len(cycle_trades)})
                 except ProviderUnavailable as exc:
-                    results.append({"market": market, "state": "blocked_not_configured",
+                    state = ("provider_unavailable" if provider_status(self.market, "market_data")["configured"]
+                             else "blocked_not_configured")
+                    results.append({"market": market, "state": state,
                                     "decision": "NO_TRADE", "trades": 0, "reason": str(exc)})
                 except Exception:
                     results.append({"market": market, "state": "provider_error",
@@ -260,7 +265,7 @@ class AutomationService:
                         ) if key in decision
                     })
                     ensemble_teams[-1]["status"] = (
-                        "delayed" if decision.get("data_quality") == "delayed" else "ready"
+                        decision["data_quality"] if decision.get("data_quality") in {"delayed", "free"} else "ready"
                     )
             ensemble_updated_at = max(
                 (item.get("created_at", "") for item in ensemble_teams), default=""
