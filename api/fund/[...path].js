@@ -42,7 +42,16 @@ function configuredOrigin() {
 }
 
 function requestedPath(request) {
-  const value = request.query && request.query.path;
+  let value = request.query && request.query.path;
+  if (value === undefined && typeof request.url === 'string') {
+    try {
+      const pathname = new URL(request.url, 'http://localhost').pathname;
+      const prefix = '/api/fund/';
+      if (pathname.startsWith(prefix)) value = pathname.slice(prefix.length);
+    } catch {
+      return null;
+    }
+  }
   const parts = Array.isArray(value)
     ? value
     : typeof value === 'string'
