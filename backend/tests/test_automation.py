@@ -129,6 +129,7 @@ class AutomationTests(unittest.TestCase):
         trade = service.record_trade({**base, "rationale": "x" * 60, "risk": "10", "reward": "25",
                                       "pnl": "5", "return_pct": "1.2"})
         self.assertEqual(trade["mode"], "simulation")
+        self.assertFalse(trade["live_ordering"])
         performance = service.performance("day")
         self.assertEqual(performance["rr"], "2.5")
         self.assertEqual(performance["win_rate"], "1")

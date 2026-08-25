@@ -32,7 +32,11 @@ def normalize_team(team: str | None) -> str | None:
 
 
 class AutomationService:
-    """Report and paper-ledger orchestration. It deliberately has no broker adapter."""
+    """Report and paper-ledger orchestration. It deliberately has no broker adapter.
+
+    Atomic file replacement protects each save, while callers are expected to
+    use one process per state directory; the in-process lock serializes workers.
+    """
     def __init__(self, state_dir: Path, market_provider: object | None = None,
                  report_provider: object | None = None, config: AutomationConfig | None = None):
         self.path = Path(state_dir) / "automation-state.json"
@@ -316,7 +320,7 @@ class AutomationService:
             numeric[key] = Decimal(str(raw.get(key, "0")))
             if not numeric[key].is_finite() or (key in {"risk", "reward"} and numeric[key] < 0):
                 raise ValueError(f"{key} must be finite and non-negative where applicable")
-        trade = {"id": uuid4().hex, "mode": "simulation", "symbol": symbol,
+        trade = {"id": uuid4().hex, "mode": "simulation", "live_ordering": False, "symbol": symbol,
                  "team": team, "side": side, "quantity": str(quantity), "price": str(price),
                  "rationale": rationale, **{key: str(value) for key, value in numeric.items()},
                  "created_at": str(raw.get("created_at") or datetime.now(timezone.utc).isoformat())}
@@ -324,6 +328,44 @@ class AutomationService:
             self._state["trades"].append(trade)
             self._save()
         return trade
+
+    def record_simulation_fill(self, raw: dict[str, Any]) -> dict[str, Any]:
+        """Idempotently append a fill produced by the local simulation engine."""
+        required = ("fill_id", "symbol", "team", "side", "quantity", "price", "rationale")
+        missing = [key for key in required if key not in raw]
+        if missing:
+            raise ValueError(f"missing simulation fill fields: {', '.join(missing)}")
+        fill_id = str(raw["fill_id"]).strip()
+        symbol = str(raw["symbol"]).upper().strip()
+        team = str(raw["team"])
+        side = str(raw["side"]).upper()
+        rationale = str(raw["rationale"]).strip()
+        if not fill_id or not symbol:
+            raise ValueError("fill_id and symbol must be non-empty")
+        if team not in TRADING_TEAMS:
+            raise ValueError("invalid team")
+        if side not in {"BUY", "SELL"}:
+            raise ValueError("side must be BUY or SELL")
+        if len(rationale) < self.config.rationale_min_length:
+            raise ValueError(f"entry rationale must be at least {self.config.rationale_min_length} characters")
+        quantity, price = Decimal(str(raw["quantity"])), Decimal(str(raw["price"]))
+        pnl = Decimal(str(raw.get("pnl", "0")))
+        if (not quantity.is_finite() or not price.is_finite() or not pnl.is_finite()
+                or quantity <= 0 or price <= 0):
+            raise ValueError("quantity and price must be finite and positive; pnl must be finite")
+        with self._lock:
+            existing = next((item for item in self._state["trades"]
+                             if item.get("source_fill_id") == fill_id), None)
+            if existing is not None:
+                return dict(existing)
+            trade = {"id": uuid4().hex, "source_fill_id": fill_id, "mode": "simulation",
+                     "live_ordering": False, "symbol": symbol, "team": team, "side": side,
+                     "quantity": str(quantity), "price": str(price), "rationale": rationale,
+                     "risk": "0", "reward": "0", "pnl": str(pnl), "return_pct": "0",
+                     "created_at": str(raw.get("created_at") or datetime.now(timezone.utc).isoformat())}
+            self._state["trades"].append(trade)
+            self._save()
+            return dict(trade)
 
     def performance(self, team: str | None = None) -> dict[str, Any]:
         selected = normalize_team(team)

@@ -104,6 +104,29 @@ class EngineTests(unittest.TestCase):
             self.assertEqual(sum(e["event_type"] == "order_filled" for e in events), 1)
             self.assertEqual(events[-1]["payload"]["reason"], "duplicate_order_id")
 
+    def test_restore_discards_only_incomplete_final_journal_record(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            first = SimulationEngine({"DEMO": Decimal("100")})
+            SimulationEngine.write_outputs(first.run([signal("persistent")]), output)
+            journal = output / "events.jsonl"
+            complete = journal.read_bytes()
+            with journal.open("ab") as handle:
+                handle.write(b'{"sequence":999,"event_type":"order_filled"')
+
+            restored = SimulationEngine({"DEMO": Decimal("100")}, state_dir=output)
+            self.assertEqual(journal.read_bytes(), complete)
+            result = restored.run([signal("persistent")])
+            self.assertEqual(result["events"][-1]["payload"]["reason"], "duplicate_order_id")
+
+    def test_restore_rejects_completed_malformed_journal_record(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            output.mkdir(exist_ok=True)
+            (output / "events.jsonl").write_bytes(b"not-json\n")
+            with self.assertRaises(json.JSONDecodeError):
+                SimulationEngine({"DEMO": Decimal("100")}, state_dir=output)
+
     def test_nonfinite_and_negative_inputs_are_rejected(self):
         for value in ("NaN", "Infinity", "-Infinity"):
             with self.assertRaises(ValueError):

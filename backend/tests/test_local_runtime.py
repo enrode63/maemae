@@ -95,6 +95,26 @@ class TickAndWorkerTests(unittest.TestCase):
             event_types = [e["event_type"] for e in result["engine_events"]]
             self.assertLess(event_types.index("risk_approved"), event_types.index("pm_approved"))
             self.assertIn("order_filled", event_types)
+            trades = runtime.automation.trades()
+            self.assertEqual(len(trades), 1)
+            trade = trades[0]
+            fill = next(e for e in result["engine_events"] if e["event_type"] == "order_filled")
+            self.assertEqual(
+                {key: trade[key] for key in ("symbol", "side", "quantity", "price", "team")},
+                {"symbol": fill["payload"]["symbol"], "side": fill["payload"]["side"],
+                 "quantity": str(Decimal(fill["payload"]["quantity"])),
+                 "price": str(Decimal(fill["payload"]["fill_price"])), "team": "scalping"})
+            self.assertEqual(trade["source_fill_id"], fill["order_id"])
+            self.assertIn("demo-only", trade["rationale"])
+            self.assertTrue(Decimal(trade["pnl"]).is_finite())
+
+            duplicate = runtime.automation.record_simulation_fill({
+                "fill_id": fill["order_id"], "symbol": trade["symbol"], "team": trade["team"],
+                "side": trade["side"], "quantity": trade["quantity"], "price": trade["price"],
+                "pnl": trade["pnl"], "rationale": trade["rationale"],
+            })
+            self.assertEqual(duplicate["id"], trade["id"])
+            self.assertEqual(len(runtime.automation.trades()), 1)
 
     def test_stop_and_error_are_safe_and_preserved(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +147,63 @@ class TickAndWorkerTests(unittest.TestCase):
             self.assertEqual(restored.ticks.sequence, 2)
             self.assertEqual(restored.engine.cash, cash.quantize(Decimal("0.00000001")))
             self.assertEqual(restored.step()["tick"]["sequence"], 3)
+
+    def test_sell_pnl_is_reconciled_and_restart_does_not_duplicate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            runtime = LocalRuntime(path, RuntimeConfig(seed=1))
+            runtime.step()
+            buy = runtime.step()
+            sell = runtime.step()
+            fill = next(e for e in sell["engine_events"] if e["event_type"] == "order_filled")
+            buy_fill = next(e for e in buy["engine_events"] if e["event_type"] == "order_filled")
+            expected = (Decimal(fill["payload"]["quantity"])
+                        * (Decimal(fill["payload"]["fill_price"])
+                           - Decimal(buy_fill["payload"]["fill_price"]))
+                        - Decimal(fill["payload"]["commission"]))
+            sell_trade = next(t for t in runtime.automation.trades()
+                              if t["source_fill_id"] == fill["order_id"])
+            self.assertEqual(Decimal(sell_trade["pnl"]), expected)
+            restored = LocalRuntime(path, RuntimeConfig(seed=1))
+            self.assertEqual(len(restored.automation.trades()), 2)
+            self.assertEqual(Decimal(next(t for t in restored.automation.trades()
+                                          if t["source_fill_id"] == fill["order_id"])["pnl"]), expected)
+
+    def test_restart_recovers_fill_when_automation_save_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            runtime = LocalRuntime(path, RuntimeConfig(seed=1))
+            runtime.step()
+            with mock.patch.object(runtime.automation, "_save",
+                                   side_effect=OSError("synthetic interrupted save")):
+                with self.assertRaisesRegex(OSError, "interrupted save"):
+                    runtime.step()
+            fills = [json.loads(line) for line in
+                     (path / "engine" / "events.jsonl").read_text(encoding="utf-8").splitlines()]
+            fill = next(e for e in fills if e["event_type"] == "order_filled")
+            restored = LocalRuntime(path, RuntimeConfig(seed=1))
+            trades = restored.automation.trades()
+            self.assertEqual(len(trades), 1)
+            self.assertEqual(trades[0]["source_fill_id"], fill["order_id"])
+            self.assertEqual(trades[0]["mode"], "simulation")
+            self.assertFalse(trades[0]["live_ordering"])
+
+    def test_restart_recovers_ledger_with_incomplete_final_engine_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            runtime = LocalRuntime(path, RuntimeConfig(seed=1))
+            runtime.step()
+            result = runtime.step()
+            fill = next(e for e in result["engine_events"] if e["event_type"] == "order_filled")
+            journal = path / "engine" / "events.jsonl"
+            with journal.open("ab") as handle:
+                handle.write(b'{"sequence":999,"event_type":"position_updated"')
+
+            restored = LocalRuntime(path, RuntimeConfig(seed=1))
+            trades = restored.automation.trades()
+            self.assertEqual(len(trades), 1)
+            self.assertEqual(trades[0]["source_fill_id"], fill["order_id"])
+            self.assertTrue(journal.read_bytes().endswith(b"\n"))
 
     def test_state_reads_wait_for_worker_snapshot_lock(self):
         with tempfile.TemporaryDirectory() as tmp:

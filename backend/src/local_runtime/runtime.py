@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from decimal import Decimal
 import json
+import os
 from pathlib import Path
 import threading
 import time
@@ -51,6 +52,7 @@ class LocalRuntime:
         self._lock = threading.RLock()
         self._requests: set[str] = set()
         self._restore_runtime()
+        self._reconcile_simulation_fills()
 
     def _restore_runtime(self) -> None:
         tick_count = 0
@@ -68,6 +70,53 @@ class LocalRuntime:
         # A process restart never resumes unattended execution.
         if list(self.events.read()):
             self.status = "stopped"
+
+    def _reconcile_simulation_fills(self) -> None:
+        """Backfill the paper ledger from the durable simulation-engine journal.
+
+        The local runtime intentionally assumes a single process/worker owns its
+        state directory.  The automation ledger uses ``source_fill_id`` as its
+        idempotency key, so replay is safe after either a completed save or a
+        crash between the engine-journal append and automation-state replace.
+        """
+        path = self.state_dir / "engine" / "events.jsonl"
+        if not path.exists():
+            return
+        positions: dict[str, tuple[Decimal, Decimal]] = {}
+        rationales: dict[str, str] = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            item = json.loads(line)
+            order_id = str(item["order_id"])
+            payload = item["payload"]
+            if item["event_type"] == "signal_received":
+                rationales[order_id] = str(payload.get("pm_reason", ""))
+                continue
+            if item["event_type"] != "order_filled":
+                continue
+            symbol = str(payload["symbol"])
+            side = str(payload["side"])
+            quantity = Decimal(payload["quantity"])
+            price = Decimal(payload["fill_price"])
+            commission = Decimal(payload["commission"])
+            held, average = positions.get(symbol, (Decimal("0"), Decimal("0")))
+            if side == "BUY":
+                new_held = held + quantity
+                new_average = ((held * average + quantity * price) / new_held
+                               if new_held else Decimal("0"))
+                pnl = -commission
+            else:
+                new_held = held - quantity
+                new_average = average if new_held else Decimal("0")
+                pnl = quantity * (price - average) - commission
+            positions[symbol] = (new_held, new_average)
+            self.automation.record_simulation_fill({
+                "fill_id": order_id, "symbol": symbol, "team": "scalping",
+                "side": side, "quantity": quantity, "price": price, "pnl": pnl,
+                "rationale": rationales.get(order_id) or
+                "Recovered demo-only simulation fill from the durable local engine journal; no broker route or live ordering is available.",
+            })
 
     def _emit(self, kind: str, payload: dict[str, Any]) -> None:
         self.events.append(kind, payload)
@@ -150,6 +199,8 @@ class LocalRuntime:
                             "ScalpingDemoWorker", True,
                             "explicit demo-only auto-approval policy; deterministic tick momentum, bounded quantity, no broker route, and simulation ledger only")
             self._emit("signal_generated", signal.json())
+            prior = self.engine.positions.get(tick.symbol)
+            prior_average = prior.average_price if prior is not None else Decimal("0")
             before = len(self.engine.events)
             self.engine.process(signal)
             new_events = self.engine.events[before:]
@@ -158,8 +209,20 @@ class LocalRuntime:
             with engine_path.open("a", encoding="utf-8") as handle:
                 for item in new_events:
                     handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
             for item in new_events:
                 self._emit("engine_event", item)
+                if item["event_type"] == "order_filled":
+                    fill = item["payload"]
+                    commission = Decimal(fill["commission"])
+                    pnl = (-commission if fill["side"] == "BUY" else
+                           Decimal(fill["quantity"]) * (Decimal(fill["fill_price"]) - prior_average) - commission)
+                    self.automation.record_simulation_fill({
+                        "fill_id": item["order_id"], "symbol": fill["symbol"],
+                        "team": "scalping", "side": fill["side"], "quantity": fill["quantity"],
+                        "price": fill["fill_price"], "pnl": pnl, "rationale": signal.pm_reason,
+                    })
             return {"tick": tick.json(), "signal": signal.json(), "engine_events": new_events}
 
     def status_json(self) -> dict[str, Any]:

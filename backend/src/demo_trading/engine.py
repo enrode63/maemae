@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
@@ -30,10 +31,26 @@ class SimulationEngine:
     def _restore(self, path: Path) -> None:
         if not path.exists():
             return
-        for line in path.read_text(encoding="utf-8").splitlines():
+        raw = path.read_bytes()
+        lines = raw.splitlines(keepends=True)
+        valid_bytes = 0
+        for index, line in enumerate(lines):
             if not line.strip():
+                valid_bytes += len(line)
                 continue
-            event = json.loads(line)
+            try:
+                event = json.loads(line)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                is_incomplete_tail = index == len(lines) - 1 and not raw.endswith((b"\n", b"\r"))
+                if not is_incomplete_tail:
+                    raise
+                # A crash may leave only the final JSON record partially written.
+                # Remove that tail so the next append starts at a valid boundary.
+                with path.open("r+b") as handle:
+                    handle.truncate(valid_bytes)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                break
             self.sequence = max(self.sequence, int(event["sequence"]))
             self.seen_orders.add(str(event["order_id"]))
             if event["event_type"] == "position_updated":
@@ -42,6 +59,7 @@ class SimulationEngine:
                 self.positions[data["symbol"]] = Position(
                     Decimal(data["quantity"]), Decimal(data["average_price"]),
                     Decimal(data["realized_pnl"]), Decimal(data["fees"]))
+            valid_bytes += len(line)
 
     def _emit(self, event_type: str, order_id: str, payload: dict[str, Any]) -> None:
         self.sequence += 1
@@ -139,5 +157,7 @@ class SimulationEngine:
         with (output_dir / "events.jsonl").open("a", encoding="utf-8") as handle:
             for event in result["events"]:
                 handle.write(json.dumps(event, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
         summary = {key: value for key, value in result.items() if key != "events"}
         (output_dir / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
