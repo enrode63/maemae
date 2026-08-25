@@ -8,7 +8,7 @@ secret bearer token; localhost remains the default.
 
 - **Root Directory:** this backend directory
 - **Build Command:** `true`
-- **Start Command:** `PYTHONPATH=src python -m local_runtime --host 0.0.0.0 --port "$PORT" --state-dir "$LOCAL_RUNTIME_STATE_DIR"`
+- **Start Command:** `PYTHONPATH=src python -m local_runtime --host 0.0.0.0 --port "$PORT" --state-dir "$LOCAL_RUNTIME_STATE_DIR" --autostart`
 - **Health Check Path:** `/health`
 
 Configure these environment variables in Render's secret/environment UI:
@@ -23,6 +23,13 @@ Configure these environment variables in Render's secret/environment UI:
 Render supplies `PORT`; the runtime also uses it automatically when
 `LOCAL_RUNTIME_PORT` is absent. `LOCAL_RUNTIME_PORT` may explicitly override it.
 `LOCAL_RUNTIME_INTERVAL_SECONDS` is optional and defaults to `1.0`.
+
+`--autostart` is the explicit deployment opt-in that starts the deterministic
+simulation worker after the HTTP server has bound successfully. It is not controlled by
+an environment default, so ordinary localhost launches remain `idle`. On each Render
+process restart it resumes from durable simulation state with a new internal start
+request ID. The existing authenticated `/runtime/pause`, `/runtime/stop`, and
+`/runtime/start` controls remain unchanged.
 
 `GET /health` and all `OPTIONS` requests are unauthenticated. Every other endpoint
 requires `Authorization: Bearer <LOCAL_RUNTIME_AUTH_TOKEN>`. CORS remains an exact

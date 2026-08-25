@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from uuid import uuid4
 
 from fund_chat import ChatError
 from .runtime import LocalRuntime, RuntimeConfig
@@ -182,12 +183,15 @@ def build_parser() -> argparse.ArgumentParser:
                         default=os.getenv(f"{ENV_PREFIX}PORT", os.getenv("PORT", "8765")))
     parser.add_argument("--state-dir", type=Path, default=os.getenv(f"{ENV_PREFIX}STATE_DIR", "local-state"))
     parser.add_argument("--interval-seconds", type=float, default=os.getenv(f"{ENV_PREFIX}INTERVAL_SECONDS", "1.0"))
+    parser.add_argument(
+        "--autostart", action="store_true",
+        help="start the simulation-only worker when the HTTP server starts (explicit opt-in)")
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         allowed_origins = parse_allowed_origins(os.getenv(f"{ENV_PREFIX}ALLOWED_ORIGINS"))
     except ValueError as exc:
@@ -197,8 +201,14 @@ def main() -> None:
     except ValueError as exc:
         parser.error(str(exc))
     runtime = LocalRuntime(args.state_dir, RuntimeConfig(interval_seconds=args.interval_seconds))
-    ThreadingHTTPServer((args.host, args.port),
-                        make_handler(runtime, allowed_origins, auth_token)).serve_forever()
+    server = ThreadingHTTPServer((args.host, args.port),
+                                 make_handler(runtime, allowed_origins, auth_token))
+    if args.autostart:
+        # LocalRuntime has no broker/live-order path: this starts only its bounded,
+        # deterministic simulation worker. A unique ID also permits safe restart
+        # against a persistent state directory whose prior request IDs are restored.
+        runtime.start(f"process-autostart-{uuid4()}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":

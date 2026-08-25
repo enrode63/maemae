@@ -13,7 +13,9 @@ python -m local_runtime --host 127.0.0.1 --port 8765 --state-dir local-state --i
 
 The host, port, state directory, and interval can be supplied as environment defaults.
 Explicit CLI arguments take precedence for those four settings. CORS additions are
-environment-only:
+environment-only. Worker autostart is deliberately CLI-only: without `--autostart`,
+including on localhost, a newly launched process remains `idle` until
+`POST /runtime/start` is called.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -48,7 +50,9 @@ never accepts a wildcard.
 
 `--interval-seconds 60` gives a one-minute cycle; fractional values are useful in
 tests. State and audit events are appended beneath `local-state`. A restart never
-automatically resumes the worker.
+automatically resumes the worker unless the operator explicitly supplies `--autostart`.
+That option starts only the deterministic simulation worker; no broker or live-order
+path exists. Pause and stop continue to use the authenticated runtime control APIs.
 
 Endpoints:
 

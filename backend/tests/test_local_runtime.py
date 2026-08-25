@@ -8,7 +8,7 @@ import threading
 import unittest
 from unittest import mock
 
-from local_runtime.api import (LOCAL_ALLOWED_ORIGINS, build_parser, make_handler,
+from local_runtime.api import (LOCAL_ALLOWED_ORIGINS, build_parser, main, make_handler,
                                parse_allowed_origins, public_auth_token)
 from local_runtime.runtime import LocalRuntime, RuntimeConfig
 from local_runtime.ticks import DeterministicTickSource
@@ -50,6 +50,33 @@ class TickAndWorkerTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"PORT": "10000",
                                           "LOCAL_RUNTIME_PORT": "9876"}, clear=True):
             self.assertEqual(build_parser().parse_args([]).port, 9876)
+
+    def test_autostart_is_explicit_and_disabled_by_default(self):
+        parser = build_parser()
+        self.assertFalse(parser.parse_args([]).autostart)
+        self.assertTrue(parser.parse_args(["--autostart"]).autostart)
+
+    def test_main_autostarts_simulation_worker_before_serving(self):
+        runtime = mock.Mock()
+        server = mock.Mock()
+        calls = []
+        runtime.start.side_effect = lambda request_id: calls.append(("start", request_id))
+        server.serve_forever.side_effect = lambda: calls.append(("serve", None))
+        with mock.patch("local_runtime.api.LocalRuntime", return_value=runtime), \
+                mock.patch("local_runtime.api.ThreadingHTTPServer", return_value=server):
+            main(["--autostart", "--state-dir", "test-state"])
+        self.assertEqual([item[0] for item in calls], ["start", "serve"])
+        self.assertRegex(calls[0][1], r"^process-autostart-[0-9a-f-]+$")
+        runtime.start.assert_called_once()
+
+    def test_main_without_autostart_keeps_worker_idle(self):
+        runtime = mock.Mock()
+        server = mock.Mock()
+        with mock.patch("local_runtime.api.LocalRuntime", return_value=runtime), \
+                mock.patch("local_runtime.api.ThreadingHTTPServer", return_value=server):
+            main(["--state-dir", "test-state"])
+        runtime.start.assert_not_called()
+        server.serve_forever.assert_called_once_with()
 
     def test_environment_defaults_keep_loopback_and_cli_can_override(self):
         environ = {"LOCAL_RUNTIME_HOST": "localhost", "LOCAL_RUNTIME_PORT": "9876",
